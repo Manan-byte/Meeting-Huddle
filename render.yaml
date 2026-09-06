@@ -1,0 +1,32 @@
+# Render Blueprint — deploy Huddle as a single Docker service.
+# Push this repo to GitHub → New Blueprint (or Blueprint Instance) in Render,
+# or: render blueprint launch https://github.com/<you>/meet-app
+#
+# Render provides HTTPS automatically (WebRTC works), restarts the service on
+# crash, and the Disk volume persists db.json (accounts/history/schedule).
+#
+# CORS_ORIGIN / CLIENT_URL are set to the deployed URL by Render via the
+# RENDER_EXTERNAL_URL env var. If you host elsewhere, set them manually.
+
+services:
+  - type: web
+    name: huddle
+    runtime: docker
+    repo: https://github.com/<your-github-username>/meet-app
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: DATA_DIR
+        value: /var/data
+      - key: CORS_ORIGIN
+        sync: false        # set to https://<your-app>.onrender.com after first deploy
+      - key: CLIENT_URL
+        sync: false        # same URL as CORS_ORIGIN
+    disk:
+      name: huddle-data
+      mountPath: /var/data
+      sizeGB: 1

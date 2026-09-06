@@ -1,0 +1,292 @@
+/**
+ * @file ParticipantList — displays all room participants with status indicators.
+ *
+ * Shows each participant's avatar (initials), name, and status badges:
+ *   - "(You)" label for the local user
+ *   - "Host" label for the room host
+ *   - "Muted" badge when microphone is off
+ *   - "No Video" badge when camera is off
+ *
+ * Connects to: RoomPage (provides participants and currentUser),
+ *              shared types (User)
+ */
+
+import { useState } from "react";
+import type { User } from "@meet-app/shared";
+
+interface ParticipantListProps {
+  /** All participants currently in the room. */
+  participants: User[];
+  /** The local user (null before joining). */
+  currentUser: User | null;
+}
+
+/**
+ * Renders a scrollable list of all room participants.
+ * Each participant shows avatar, name, role, and status badges.
+ */
+export function ParticipantList({ participants, currentUser }: ParticipantListProps) {
+  return (
+    <div style={styles.container}>
+      <header style={styles.header}>
+        <span style={styles.headerAccent} aria-hidden="true" />
+        <h3 style={styles.heading}>
+          Participants
+          <span style={styles.count}>{participants.length}</span>
+        </h3>
+      </header>
+      <ul style={styles.list}>
+        {participants.map((p, i) => (
+          <ParticipantRow
+            key={p.id}
+            participant={p}
+            isYou={p.id === currentUser?.id}
+            hasDivider={i < participants.length - 1}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** A single participant row with hover state and status indicators. */
+function ParticipantRow({
+  participant,
+  isYou,
+  hasDivider,
+}: {
+  participant: User;
+  isYou: boolean;
+  hasDivider: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <li
+      style={{
+        ...styles.item,
+        ...(hasDivider ? styles.itemDivider : null),
+        ...(hovered ? styles.itemHover : null),
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Avatar: first two initials */}
+      <div style={{ ...styles.avatar, ...(isYou ? styles.avatarYou : null) }}>
+        {participant.name
+          .split(" ")
+          .map((w) => w[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2)}
+      </div>
+      <div style={styles.info}>
+        <div style={styles.nameRow}>
+          <span style={styles.name}>{participant.name}</span>
+          {isYou && <span style={styles.youBadge}>You</span>}
+        </div>
+        {participant.isHost && (
+          <div style={styles.subline}>
+            <CrownIcon />
+            <span>Host</span>
+          </div>
+        )}
+      </div>
+      <div style={styles.indicators}>
+        {participant.isMuted && (
+          <span style={styles.mutedBadge} title="Muted">
+            <MicOffIcon />
+          </span>
+        )}
+        {participant.isVideoOff && (
+          <span style={styles.noVideoBadge} title="Video off">
+            <CamOffIcon />
+          </span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+const MicOffIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+    <path d="M19 10v2a7 7 0 0 1-11 4.8" />
+    <line x1="4" y1="4" x2="20" y2="20" />
+  </svg>
+);
+
+const CamOffIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M23 7l-7 5 7 5V7z" />
+    <rect x="1" y="5" width="15" height="14" rx="2" />
+    <line x1="3" y1="3" x2="21" y2="21" />
+  </svg>
+);
+
+const CrownIcon = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M3.4 8.2l4.2 3.1L12 5.2l4.4 6.1 4.2-3.1-1.3 8.3H4.7z" />
+  </svg>
+);
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    background: "var(--bg-card)",
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "14px 16px",
+    borderBottom: "1px solid var(--border)",
+  },
+  headerAccent: {
+    width: 3,
+    height: 16,
+    borderRadius: 2,
+    background: "var(--accent)",
+    flexShrink: 0,
+  },
+  heading: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    margin: 0,
+    fontSize: 15,
+    fontWeight: 700,
+    letterSpacing: "-0.01em",
+    color: "var(--text)",
+  },
+  count: {
+    marginLeft: "auto",
+    fontSize: 12,
+    fontWeight: 600,
+    color: "var(--text-dim)",
+    background: "var(--bg-soft)",
+    padding: "2px 8px",
+    borderRadius: 999,
+  },
+  list: {
+    listStyle: "none",
+    margin: 0,
+    padding: "6px 0",
+    overflow: "auto",
+    flex: 1,
+  },
+  item: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "10px 16px",
+    transition: "background 0.15s ease",
+  },
+  itemDivider: {
+    borderBottom: "1px solid var(--border)",
+  },
+  itemHover: {
+    background: "var(--bg-soft)",
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    background:
+      "radial-gradient(circle at 30% 20%, rgba(155,234,92,0.35) 0%, transparent 60%), linear-gradient(135deg, #eef7e2 0%, #d9f2bd 100%)",
+    color: "var(--accent-dark)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 13,
+    fontWeight: 700,
+    flexShrink: 0,
+    border: "1px solid var(--border)",
+    boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
+  },
+  avatarYou: {
+    borderColor: "var(--accent)",
+  },
+  info: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nameRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 0,
+  },
+  name: {
+    fontSize: 14,
+    fontWeight: 500,
+    color: "var(--text)",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  youBadge: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.02em",
+    color: "var(--accent-ink)",
+    background: "var(--accent)",
+    padding: "2px 8px",
+    borderRadius: 999,
+    flexShrink: 0,
+  },
+  subline: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: 600,
+    color: "var(--accent)",
+  },
+  indicators: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 0,
+  },
+  mutedBadge: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 26,
+    height: 26,
+    borderRadius: "50%",
+    background: "rgba(234,67,53,0.15)",
+    color: "var(--danger)",
+  },
+  noVideoBadge: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 26,
+    height: 26,
+    borderRadius: "50%",
+    background: "rgba(245,158,11,0.15)",
+    color: "#f59e0b",
+  },
+};

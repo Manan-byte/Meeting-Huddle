@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment & secrets (NEVER commit these — contain Cloudflare/LiveKit/GitHub credentials)
+.env
+.env.local
+.env.*.local
+apps/server/.env
+apps/web/.env
+
+# Local data
+apps/server/data/
+data/
+
+# Test / debug artifacts
+coverage/
+*.log
+.suitest/
+omp-sshots/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# ForgeGuard local cache
+.forgeguard/

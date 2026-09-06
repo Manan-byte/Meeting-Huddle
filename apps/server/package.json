@@ -1,0 +1,31 @@
+{
+  "name": "@meet-app/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cors": "^2.8.0",
+    "dotenv": "^16.0.0",
+    "express": "^4.0.0",
+    "livekit-server-sdk": "^2.18.0",
+    "socket.io": "^4.0.0",
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "@meet-app/shared": "workspace:*",
+    "@types/cors": "^2.8.0",
+    "@types/express": "^5.0.0",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "packageManager": "pnpm@11.4.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:server": "turbo run dev --filter=@meet-app/server",
+    "dev:web": "turbo run dev --filter=@meet-app/web",
+    "build": "turbo run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
