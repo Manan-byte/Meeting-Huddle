@@ -2,8 +2,9 @@
 # Push this repo to GitHub → New Blueprint (or Blueprint Instance) in Render,
 # or: render blueprint launch https://github.com/<you>/meet-app
 #
-# Render provides HTTPS automatically (WebRTC works), restarts the service on
-# crash, and the Disk volume persists db.json (accounts/history/schedule).
+# Render provides HTTPS automatically (WebRTC works) and restarts the service
+# on crash. Durable data lives in Cloudflare D1 (via env credentials), so no
+# disk volume is needed.
 #
 # CORS_ORIGIN / CLIENT_URL are set to the deployed URL by Render via the
 # RENDER_EXTERNAL_URL env var. If you host elsewhere, set them manually.
@@ -20,13 +21,19 @@ services:
     envVars:
       - key: PORT
         value: 3001
-      - key: DATA_DIR
-        value: /var/data
       - key: CORS_ORIGIN
         sync: false        # set to https://<your-app>.onrender.com after first deploy
       - key: CLIENT_URL
         sync: false        # same URL as CORS_ORIGIN
-    disk:
-      name: huddle-data
-      mountPath: /var/data
-      sizeGB: 1
+      - key: CF_ACCOUNT_ID
+        sync: false        # Cloudflare account id
+      - key: D1_DATABASE_ID
+        sync: false        # Cloudflare D1 database id
+      - key: CF_API_TOKEN
+        sync: false        # Cloudflare API token (D1 Edit)
+      - key: LIVEKIT_URL
+        sync: false        # LiveKit SFU URL
+      - key: LIVEKIT_API_KEY
+        sync: false        # LiveKit API key
+      - key: LIVEKIT_API_SECRET
+        sync: false        # LiveKit API secret

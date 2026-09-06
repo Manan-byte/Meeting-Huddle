@@ -236,10 +236,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 WORKDIR /app/apps/server
-# Durable data (accounts, history, schedule) is stored under apps/server/data.
-# Set DATA_DIR to a stable path so a named volume can persist it across container restarts.
-ENV DATA_DIR=/app/server/data
-VOLUME ["/app/server/data"]
+# Durable data (accounts, history, schedule) lives in Cloudflare D1 — not on a
+# container volume. D1 credentials come from env (CF_ACCOUNT_ID/D1_DATABASE_ID/CF_API_TOKEN).
+# LiveKit + GitHub credentials are also env-driven (see docs/DEPLOYMENT.md).
 EXPOSE 3001
 ENV PORT=3001
 CMD ["node", "dist/index.js"]
@@ -251,18 +250,20 @@ COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 EXPOSE 80
 ```
 
-Build and run (single process, data persisted):
+Build and run (single process, data in Cloudflare D1):
 
 ```bash
 docker build --target server -t meet-app-server .
-docker volume create huddle-data
-docker run -p 3001:3001 -v huddle-data:/app/server/data meet-app-server
+docker run -p 3001:3001 \
+  -e CF_ACCOUNT_ID=... -e D1_DATABASE_ID=... -e CF_API_TOKEN=... \
+  -e LIVEKIT_URL=... -e LIVEKIT_API_KEY=... -e LIVEKIT_API_SECRET=... \
+  meet-app-server
 ```
 
 Open `http://localhost:3001`. The server image bundles the built web client and serves it
-together with Socket.IO — no separate frontend, no CORS needed. Accounts, meeting history,
-and scheduled meetings are stored in `apps/server/data/db.json`, persisted in the
-`huddle-data` volume so they survive container restarts and redeploys.
+together with Socket.IO — no separate frontend, no CORS needed. Durable data (accounts,
+sessions, history, schedule) is stored in **Cloudflare D1** via the HTTP API, so it survives
+container restarts and redeploys without a volume.
 
 For a split deployment instead, deploy `apps/web/dist` to static hosting and point the
 client's Socket.IO connection at the server origin (see below).
@@ -270,8 +271,8 @@ client's Socket.IO connection at the server origin (see below).
 ### Option 3: Platform-as-a-Service (recommended — HTTPS + Docker managed)
 
 Both **Render** and **Railway** build the included `Dockerfile`, provide HTTPS
-automatically (required for WebRTC), restart the service on crash, and can persist
-`db.json` on a disk/volume.
+automatically (required for WebRTC), restart the service on crash, and pass env vars.
+Durable data lives in **Cloudflare D1** (no disk volume needed).
 
 #### Render
 
@@ -281,13 +282,15 @@ The repo includes `render.yaml`. Push to GitHub, then:
 2. After first deploy, set the two `sync: false` env vars to your URL:
    - `CORS_ORIGIN` = `https://<your-app>.onrender.com`
    - `CLIENT_URL` = same
-3. Render mounts the `huddle-data` disk at `/var/data` (that's where `DATA_DIR` points).
+3. Add the service env vars: `CF_ACCOUNT_ID`, `D1_DATABASE_ID`, `CF_API_TOKEN` (D1),
+   plus `LIVEKIT_*` (video) and `GITHUB_*` (OAuth) as needed.
 
 #### Railway
 
 1. **New Project → Deploy from GitHub repo** (Railway auto-detects the Dockerfile).
-2. Add env vars: `PORT=3001`, `DATA_DIR=/data`, `CORS_ORIGIN=https://<your-app>.up.railway.app`, `CLIENT_URL=same`.
-3. Add a **Volume** mounted at `/data` so accounts/history/schedule persist.
+2. Add env vars: `PORT=3001`, `CORS_ORIGIN=https://<your-app>.up.railway.app`, `CLIENT_URL=same`,
+   plus `CF_ACCOUNT_ID`, `D1_DATABASE_ID`, `CF_API_TOKEN`, and `LIVEKIT_*` / `GITHUB_*` as needed.
+3. No volume required — data persists in Cloudflare D1.
 
 Health check: the server exposes `GET /health` (used by both platforms' uptime checks).
 
@@ -310,10 +313,11 @@ the app code. For self-hosted LiveKit, configure TURN on the LiveKit server as n
 
 ## Limitations
 
-- **Room state is in-memory**: live WebRTC rooms, participants, and chat are kept in memory (normal for realtime), so a server restart ends active meetings. Durable data (accounts, history, schedule) is persisted to `db.json`.
-- **Sessions persisted but token-based**: logins survive restarts via persisted tokens; there is no OAuth or password reset flow yet.
-- **Anyone with a room code can join** a live room — joining doesn't require an account (accounts gate the dashboard, not the call).
-- **Max 10 participants**: Enforced by `ROOM_CONFIG.MAX_PARTICIPANTS`.
+- **Room state is in-memory**: live rooms, participants, and chat are kept in memory (normal for realtime), so a server restart ends active meetings. Durable data (accounts, sessions, history, schedule) is persisted to **Cloudflare D1**.
+- **Media requires LiveKit**: video/audio only works when `LIVEKIT_URL`/`LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET` are set. Without them, non-video features still work; the room shows no media (token endpoint returns 503).
+- **Anyone with a room code can join** a live room — joining doesn't require an account (accounts gate the dashboard and Schedule, not the call).
+- **Max participants per room**: Enforced by `ROOM_CONFIG.MAX_PARTICIPANTS` (10); raise it for larger meetings — LiveKit SFU handles many participants, the limit is a product setting.
 - **No HTTPS by default**: WebRTC requires HTTPS in production (except localhost). Use a reverse proxy (nginx, Caddy) or deploy behind a platform that provides TLS.
+- **GitHub OAuth**: implemented server-side (callback + token exchange); requires `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` + `VITE_GITHUB_CLIENT_ID`. Password reset is not implemented.
 - **AI Companion (server)**: Retained server-side handlers use keyword extraction, not a real LLM. The feature is **not surfaced in the web UI** (removed in v0.2).
 - **Live Captions**: Depends on browser Web Speech API support (Chrome/Edge primarily).

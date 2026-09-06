@@ -137,7 +137,7 @@ Hosts both create (CREATE_ROOM) and join (JOIN_ROOM) flows and pre-fills the joi
 | `onJoin` | `() => void` — proceeds to emit CREATE/JOIN and enter the room |
 | `onCancel` | `() => void` |
 
-**Behavior**: Google Meet-style lobby. Acquires camera+mic via `getUserMedia` and shows a live preview. Enumerates devices and renders pill-shaped mic/camera selectors. Toggle buttons mute mic / disable camera. On "Join now" stops the preview stream (RoomPage re-acquires via `useWebRTC`) and calls `onJoin`. Shows initials fallback + error message when no camera is available.
+**Behavior**: Google Meet-style lobby. Acquires camera+mic via `getUserMedia` and shows a live preview. Enumerates devices and renders pill-shaped mic/camera selectors. Toggle buttons mute mic / disable camera. On "Join now" stops the preview stream (RoomPage re-acquires via `useLiveKit`) and calls `onJoin`. Shows initials fallback + error message when no camera is available.
 
 ### `SchedulePicker` (`components/SchedulePicker.tsx`)
 

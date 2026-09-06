@@ -34,9 +34,8 @@ COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-# Durable data (accounts, history, schedule) — persist via a named volume
-ENV DATA_DIR=/app/server/data
-VOLUME ["/app/server/data"]
+# Durable data (accounts, history, schedule) lives in Cloudflare D1 via env
+# credentials (CF_ACCOUNT_ID / D1_DATABASE_ID / CF_API_TOKEN) — no local volume.
 WORKDIR /app/apps/server
 EXPOSE 3001
 ENV PORT=3001
