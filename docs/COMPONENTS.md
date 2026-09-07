@@ -71,7 +71,7 @@ interface SocketContextValue {
 }
 ```
 
-- Creates `socket.io-client` connection on mount using WebSocket with polling fallback.
+- Creates a `WsSocket` (raw WebSocket adapter) connection on mount; auto-reconnects with backoff.
 - Auto-connects to same origin (/ws on the Worker; Vite proxies to wrangler dev in local dev).
 - Cleans up socket on unmount.
 - Exported hook: `useSocket()`.
