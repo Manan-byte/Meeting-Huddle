@@ -1,12 +1,12 @@
 /**
- * @file PreJoinScreen â€” clean, modern lobby before entering the meeting.
+ * @file PreJoinScreen — clean, modern lobby before entering the meeting.
  *
  * Shows a live camera preview so the user can check their mic/camera, pick
  * devices, and toggle mic/video before joining. On "Join now" it stops the
  * preview media (RoomPage re-acquires via useLiveKit) and invokes the
  * provided onJoin callback to emit CREATE_ROOM/JOIN_ROOM and enter the room.
  *
- * Design: a light, friendly SaaS-style panel â€” soft overlay, spacious card,
+ * Design: a light, friendly SaaS-style panel — soft overlay, spacious card,
  * rounded preview with polished center controls, accessible device pills,
  * and clear primary/secondary actions. Matches the app's light theme.
  *
@@ -103,7 +103,7 @@ export function PreJoinScreen({
         setTestingAudio(false);
       }, 600);
     } catch {
-      /* audio context unavailable â€” ignore */
+      /* audio context unavailable — ignore */
     }
   };
 
@@ -115,7 +115,7 @@ export function PreJoinScreen({
         JSON.stringify({ backgroundBlur, virtualBackground })
       );
     } catch {
-      /* storage unavailable â€” background just won't persist */
+      /* storage unavailable — background just won't persist */
     }
     onJoin();
   };
@@ -183,7 +183,7 @@ export function PreJoinScreen({
   };
 
   const initials = (userName || "?").slice(0, 2).toUpperCase();
-  /** Display name with the first letter capitalized (e.g. "mANAN" â†’ "Manan"). */
+  /** Display name with the first letter capitalized (e.g. "mANAN" → "Manan"). */
   const displayName = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : userName;
 
   return (

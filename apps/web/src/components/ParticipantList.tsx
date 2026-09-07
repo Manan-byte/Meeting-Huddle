@@ -1,5 +1,5 @@
 /**
- * @file ParticipantList â€” displays all room participants with status indicators.
+ * @file ParticipantList — displays all room participants with status indicators.
  *
  * Shows each participant's avatar (initials), name, and status badges:
  *   - "(You)" label for the local user

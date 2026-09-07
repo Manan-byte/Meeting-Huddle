@@ -3,6 +3,15 @@
    Uses: .dash-*, .hp-* (hero / feature / state layers)
    ================================================================ */
 
+/* ── Hero ambient particle field (Three.js) ─────────────────────── */
+.hp-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 /* ── Buttons & interactive state pairs ─────────────────────────── */
 
 /* Primary pill (New meeting / Schedule / Sign in submit) */

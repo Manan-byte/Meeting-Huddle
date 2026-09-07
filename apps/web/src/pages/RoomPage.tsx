@@ -1,5 +1,5 @@
 /**
- * @file Room page â€” the main video meeting interface.
+ * @file Room page — the main video meeting interface.
  *
  * This is the largest component, orchestrating all meeting features:
  *   - Socket event listeners (20+ events) that update room state
@@ -9,8 +9,8 @@
  *   - Handles edge cases: meeting ended screen, waiting room screen
  *
  * Data flow:
- *   Server â†’ socket events â†’ RoomPage handlers â†’ RoomContext state â†’ child components
- *   User actions â†’ ControlBar buttons â†’ RoomPage handlers â†’ socket emits â†’ Server
+ *   Server → socket events → RoomPage handlers → RoomContext state → child components
+ *   User actions → ControlBar buttons → RoomPage handlers → socket emits → Server
  *
  * Connects to: SocketContext, RoomContext, useLiveKit, all child components,
  *              server handlers (room, signaling, chat, features, meeting)
@@ -58,11 +58,11 @@ interface RoomPageProps {
 }
 
 /**
- * Main room page component â€” the video meeting interface.
+ * Main room page component — the video meeting interface.
  * Registers all socket event listeners and renders the full meeting UI.
  */
 export function RoomPage({ onLeaveRoom }: RoomPageProps) {
-  // â”€â”€ Context & hooks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Context & hooks ───────────────────────────────────────────────────
   const { socket } = useSocket();
   const {
     room,
@@ -82,7 +82,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     setMeetingStartedAt,
   } = useRoom();
 
-  // â”€â”€ UI panel visibility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── UI panel visibility ───────────────────────────────────────────────
   const [showChat, setShowChat] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -112,7 +112,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
   /** Latest chat message to show in a toast when the panel is closed (auto-clears). */
   const [chatToast, setChatToast] = useState<ChatMessage | null>(null);
 
-  // â”€â”€ New feature state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── New feature state ─────────────────────────────────────────────────
   const [showReactions, setShowReactions] = useState(false);        // Reaction bar visibility
   const [showPolls, setShowPolls] = useState(false);                // Poll modal visibility
   const [isCaptionEnabled, setIsCaptionEnabled] = useState(false); // Live captions toggle
@@ -122,7 +122,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
   const [isMeetingEnded, setIsMeetingEnded] = useState(false);     // Meeting ended flag
   const [isInWaitingRoom, setIsInWaitingRoom] = useState(false);   // Waiting room flag
 
-  // â”€â”€ Recording (client-side MediaRecorder) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Recording (client-side MediaRecorder) ──────────────────────────
   // Records the local stream (camera or screen share + mic audio) to WebM.
   // When recording starts: create MediaRecorder on localStream, collect chunks.
   // When recording stops: assemble chunks into a Blob and trigger auto-download.
@@ -130,9 +130,9 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
   const recorderChunksRef = useRef<Blob[]>([]);
   /** Whether the recording is currently paused (MediaRecorder.pause). */
   const [isRecordingPaused, setIsRecordingPaused] = useState(false);
-  /** Elapsed recording time (seconds) â€” only counts while actively recording. */
+  /** Elapsed recording time (seconds) — only counts while actively recording. */
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  // â”€â”€ LiveKit hook â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── LiveKit hook ──────────────────────────────────────────────────
   // Manages local/remote media + screen sharing via the LiveKit SFU server.
   const {
     localStream,
@@ -147,11 +147,11 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     applySettings,
   } = useLiveKit({ roomName: room?.code ?? null, identity: currentUser?.name ?? "participant" });
 
-  // Local mic activity â†’ speaking ring on the mic button (and own tile).
+  // Local mic activity → speaking ring on the mic button (and own tile).
   const localSpeakingLevel = useSpeakingLevel(localStream);
   const isLocalSpeaking = localSpeakingLevel > SPEAKING_THRESHOLD && !(currentUser?.isMuted ?? false);
 
-  // â”€â”€ Push-to-talk (Discord-style hold-to-talk) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Push-to-talk (Discord-style hold-to-talk) ───────────────────────
   const [isPushToTalk, setIsPushToTalk] = useState(false);
   const [pushToTalkHotkey, setPushToTalkHotkey] = useState<string>(() => {
     try {
@@ -186,21 +186,21 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     onMuteChange: handlePushToTalkMute,
   });
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════════════════════
   // SOCKET EVENT LISTENERS
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════════════════════
   // Registers 20+ listeners that update RoomContext state.
   // All listeners are cleaned up on unmount via the useEffect return.
   useEffect(() => {
     if (!socket || !room) return;
 
-    // â”€â”€ Room state sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Room state sync ────────────────────────────────────────────────
     // Full room state from server (after joins/leaves)
     const handleRoomState = (state: RoomState) => {
       setParticipants(state.participants);
     };
 
-    // â”€â”€ Participant events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Participant events ─────────────────────────────────────────────
     // New participant joined (add to list, triggers WebRTC offer)
     const handleParticipantJoined = (payload: { user: User }) => {
       const user = payload.user;
@@ -216,7 +216,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
       setParticipants((prev) => prev.filter((p) => p.id !== userId));
     };
 
-    // â”€â”€ Media state events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Media state events ─────────────────────────────────────────────
     // Mute state changed by another participant
     const handleMuteToggle = (data: { userId: string; isMuted: boolean }) => {
       updateParticipant(data.userId, { isMuted: data.isMuted });
@@ -227,7 +227,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
       updateParticipant(data.userId, { isVideoOff: data.isVideoOff });
     };
 
-    // â”€â”€ Chat events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Chat events ────────────────────────────────────────────────────
     // New chat message from any participant.
     const handleChatMessage = (message: ChatMessage) => {
       addMessage(message);
@@ -245,19 +245,19 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
       setMessages(history);
     };
 
-    // â”€â”€ Hand raise event â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Hand raise event ───────────────────────────────────────────────
     // Hand raise/lower state changed
     const handleHandRaise = (data: { userId: string; isHandRaised: boolean }) => {
       updateParticipant(data.userId, { isHandRaised: data.isHandRaised });
     };
 
-    // â”€â”€ Recording event â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Recording event ────────────────────────────────────────────────
     // Recording state changed by host
     const handleRecordingState = (state: RecordingState) => {
       setRecording(state);
     };
 
-    // â”€â”€ Meeting title event â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Meeting title event ────────────────────────────────────────────
     // Title changed by host
     const handleMeetingTitleUpdated = (data: { meetingTitle: string }) => {
       if (room) {
@@ -265,20 +265,20 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
       }
     };
 
-    // â”€â”€ Layout event â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Layout event ───────────────────────────────────────────────────
     // Layout mode changed by any participant
     const handleLayoutChanged = (data: { layout: LayoutMode }) => {
       setLayout(data.layout);
     };
 
-    // â”€â”€ Reaction event â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Reaction event ─────────────────────────────────────────────────
     // Emoji reaction broadcast from any participant
     const handleReactionBroadcast = (reaction: Reaction) => {
       setRecentReactions((prev) => [...prev, reaction]);
     };
 
 
-    // â”€â”€ Caption events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Caption events ─────────────────────────────────────────────────
     // New speech-to-text caption segment (from other participants only)
     const handleCaptionSegment = (segment: CaptionSegment) => {
       if (segment.userId !== currentUser?.id) {
@@ -292,7 +292,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
       setIsCaptionEnabled(data.enabled);
     };
 
-    // â”€â”€ Waiting room events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Waiting room events ────────────────────────────────────────────
     // Waiting room list updated (host sees new joiners)
     const handleWaitingRoomUpdate = (users: WaitingUser[]) => {
       setWaitingUsers(users);
@@ -303,25 +303,25 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
       setIsInWaitingRoom(data.waiting);
     };
 
-    // Lock state changed by the host â€” sync room.isLocked for all
+    // Lock state changed by the host — sync room.isLocked for all
     const handleLockChanged = (data: { isLocked: boolean }) => {
       if (room) {
         setRoom({ ...room, isLocked: data.isLocked });
       }
     };
 
-    // â”€â”€ Meeting lifecycle events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // Meeting ended by host â€” show "Meeting Has Ended" screen
+    // ── Meeting lifecycle events ───────────────────────────────────────
+    // Meeting ended by host — show "Meeting Has Ended" screen
     const handleMeetingEnded = () => {
       setIsMeetingEnded(true);
     };
 
-    // Meeting started â€” set the timer start timestamp
+    // Meeting started — set the timer start timestamp
     const handleMeetingStarted = (data: { startedAt: number }) => {
       setMeetingStartedAt(data.startedAt);
     };
 
-    // â”€â”€ Register all listeners â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Register all listeners ─────────────────────────────────────────
     socket.on(SOCKET_EVENTS.ROOM_STATE, handleRoomState);
     socket.on(SOCKET_EVENTS.PARTICIPANT_JOINED, handleParticipantJoined);
     socket.on(SOCKET_EVENTS.PARTICIPANT_LEFT, handleParticipantLeft);
@@ -343,7 +343,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     socket.on(SOCKET_EVENTS.MEETING_ENDED, handleMeetingEnded);
     socket.on(SOCKET_EVENTS.MEETING_STARTED, handleMeetingStarted);
 
-    // â”€â”€ Cleanup: remove all listeners on unmount or dependency change â”€â”€
+    // ── Cleanup: remove all listeners on unmount or dependency change ──
     return () => {
       socket.off(SOCKET_EVENTS.ROOM_STATE, handleRoomState);
       socket.off(SOCKET_EVENTS.PARTICIPANT_JOINED, handleParticipantJoined);
@@ -375,7 +375,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     return () => clearTimeout(t);
   }, [chatToast]);
 
-  // Recording elapsed-time ticker â€” increments each second while actively
+  // Recording elapsed-time ticker — increments each second while actively
   // recording (paused recordings freeze the timer).
   useEffect(() => {
     const isRecording = recorderRef.current?.state === "recording";
@@ -383,9 +383,9 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     const t = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [isRecordingPaused, recording?.isRecording]);
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  // ACTION HANDLERS (user-initiated actions â†’ socket emits)
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════════════════════
+  // ACTION HANDLERS (user-initiated actions → socket emits)
+  // ════════════════════════════════════════════════════════════════════
 
   /** Leave the room: emit LEAVE_ROOM to server, navigate back to home. */
   const handleLeave = () => {
@@ -427,9 +427,9 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
 
   /**
    * Record control (host only). Supports start / pause / resume / stop:
-   *   - Not recording      â†’ start MediaRecorder, reset timer
-   *   - Recording          â†’ pause (freezes timer)
-   *   - Paused             â†’ resume (continues timer)
+   *   - Not recording      → start MediaRecorder, reset timer
+   *   - Recording          → pause (freezes timer)
+   *   - Paused             → resume (continues timer)
    * Stop assembles chunks into a WebM and auto-downloads it.
    */
   const handleToggleRecord = useCallback(() => {
@@ -437,7 +437,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     const rec = recorderRef.current;
 
     if (!rec || rec.state === "inactive") {
-      // â”€â”€ Start recording â”€â”€
+      // ── Start recording ──
       if (rec) {
         rec.stop();
         recorderRef.current = null;
@@ -465,11 +465,11 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
       // Notify server so RECORDING_STATE broadcasts to the room (indicator shows).
       socket?.emit(SOCKET_EVENTS.TOGGLE_RECORDING, { roomId: room?.id });
     } else if (rec.state === "recording") {
-      // â”€â”€ Pause recording (freeze timer) â”€â”€
+      // ── Pause recording (freeze timer) ──
       rec.pause();
       setIsRecordingPaused(true);
     } else {
-      // â”€â”€ Resume recording (continue timer) â”€â”€
+      // ── Resume recording (continue timer) ──
       rec.resume();
       setIsRecordingPaused(false);
     }
@@ -518,7 +518,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     [applySettings, socket],
   );
 
-  // â”€â”€ New feature handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── New feature handlers ─────────────────────────────────────────────
   /** Toggle the reaction bar visibility. */
   const handleToggleReactions = useCallback(() => setShowReactions((v) => !v), []);
 
@@ -554,11 +554,11 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     [socket],
   );
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════════════════════
   // RENDER: Special states (meeting ended, waiting room)
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════════════════════
 
-  // Meeting ended screen â€” shown when host ends the meeting
+  // Meeting ended screen — shown when host ends the meeting
   if (isMeetingEnded) {
     return (
       <div style={styles.endedContainer}>
@@ -575,7 +575,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     );
   }
 
-  // Waiting room screen â€” shown when room is locked and user is waiting for host approval
+  // Waiting room screen — shown when room is locked and user is waiting for host approval
   if (isInWaitingRoom) {
     return (
       <div style={styles.endedContainer}>
@@ -589,14 +589,14 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     );
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════════════════════
   // RENDER: Main meeting interface
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════════════════════
   return (
     <div style={styles.container}>
-      {/* â”€â”€ Body row: main video + left sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Body row: main video + left sidebar ─────────────────────── */}
       <div style={styles.body}>
-        {/* Main content area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* Main content area ──────────────────────────────────────── */}
         <div style={styles.main}>
           {/* Header bar: title + status (clean, Google Meet style) */}
           <div style={styles.header}>
@@ -614,7 +614,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
             {meetingStartedAt > 0 && <MeetingTimer startedAt={meetingStartedAt} />}
           </div>
           <div style={styles.headerRight}>
-            <span style={styles.roomCode}>{room?.code ?? "â€”"}</span>
+            <span style={styles.roomCode}>{room?.code ?? "—"}</span>
             <span style={styles.participantCount}>
               <span style={styles.liveDot} />
               {participants.length} participant{participants.length !== 1 ? "s" : ""}
@@ -662,7 +662,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
           )}
         </div>
 
-        {/* Chat toast â€” preview of an incoming message when the chat panel is closed */}
+        {/* Chat toast — preview of an incoming message when the chat panel is closed */}
         {chatToast && (
           <div style={styles.chatToast} onClick={() => setShowChat(true)}>
             <span style={styles.chatToastSender}>{chatToast.senderName}</span>
@@ -671,7 +671,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
         )}
         </div>
 
-        {/* â”€â”€ Sidebar (Participants / Chat) on the right â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Sidebar (Participants / Chat) on the right ────────────── */}
         {/* Only one sidebar panel visible at a time */}
         <div
           style={{
@@ -692,7 +692,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
         </div>
       </div>
 
-      {/* â”€â”€ Bottom control bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Bottom control bar ─────────────────────────────────────── */}
       <ControlBar
         isMuted={currentUser?.isMuted ?? false}
         isVideoOff={currentUser?.isVideoOff ?? false}
@@ -741,7 +741,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
         onPushToTalkHotkeyChange={setPushToTalkHotkey}
       />
 
-      {/* â”€â”€ Modals (overlay panels) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Modals (overlay panels) ────────────────────────────────── */}
       {showSettings && (
         <SettingsPanel
           onClose={() => setShowSettings(false)}

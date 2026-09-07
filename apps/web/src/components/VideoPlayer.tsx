@@ -1,12 +1,12 @@
 /**
- * @file VideoPlayer â€” renders a single video tile for a participant.
+ * @file VideoPlayer — renders a single video tile for a participant.
  *
  * Display states:
  *   1. Video active: binds MediaStream to a <video> element
  *   2. Video off: shows user initials as avatar
  *   3. Virtual background (local tile only): renders through SegmentedVideo
  *      (MediaPipe person cutout) so the speaker stays fully visible while the
- *      background is replaced â€” no full-frame tint.
+ *      background is replaced — no full-frame tint.
  *
  * Also shows: hand raise badge, participant name, "You" badge, and a speaking
  * indicator (audio bars) when the stream carries sound.
@@ -68,7 +68,7 @@ export function VideoPlayer({
     };
   }, [stream, isVideoOff]);
 
-  // Local tile with a chosen background â†’ use real segmentation.
+  // Local tile with a chosen background → use real segmentation.
   const useSegmented =
     isLocal && stream && !isVideoOff && (backgroundBlur || (virtualBackground && virtualBackground !== "blur"));
   const segMode = backgroundBlur
@@ -101,7 +101,7 @@ export function VideoPlayer({
         />
       )}
 
-      {/* Speaking indicator â€” audio bars when sound is coming in */}
+      {/* Speaking indicator — audio bars when sound is coming in */}
       {isSpeaking && !isMuted && (
         <div style={styles.speakingBadge} title="Speaking">
           <span style={styles.speakingBar} />
