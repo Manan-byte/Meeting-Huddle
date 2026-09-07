@@ -486,6 +486,21 @@ Reactions, Polls, Live Captions, AI Companion, Virtual Background, Settings Pane
 
 ## Changelog — Recent Fixes & Improvements
 
+### Auth disederhanakan: email/password saja (hapus OAuth) + lupa-password
+- **Hapus "Sign in with Google" & "Sign in with GitHub"** dari modal — login kini
+  email/password saja. Tidak perlu sinkron callback URL di Google/GitHub console
+  (menghilangkan error `redirect_uri_mismatch`).
+- **Modal langsung form login** (email + password), dengan link "Forgot password?"
+  dan "New to Huddle? Sign up with email".
+- **Fitur lupa-password**: `auth:forgot` (keluarkan reset code 6 karakter, valid 30
+  menit, simpan di D1) + `auth:reset` (verifikasi code → ubah password). Karena free
+  tier tanpa SMTP, code ditampilkan di layar.
+- **Backend**: hapus `githubOAuth.ts` + `googleOAuth.ts` + route `/auth/*/callback`;
+  hapus secret OAuth (`GITHUB_*`, `GOOGLE_*`) dari Worker; hapus kolom/find-method
+  OAuth di `database.ts`.
+- **Diverifikasi E2E**: register → forgot → reset → password lama ditolak → password
+  baru diterima.
+
 ### Cloudflare Workers rewrite — always-on, no server, no PC
 - **Backend pindah ke Cloudflare Workers + Durable Objects**: server Node (Express +
   Socket.IO) diganti full-stack Cloudflare. Realtime, auth, dashboard, LiveKit token,

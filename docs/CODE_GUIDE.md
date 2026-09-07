@@ -77,10 +77,8 @@ Fungsi `fetch(request, env)` routing semua request:
 1. `OPTIONS` → balas CORS.
 2. `/health` → `{"ok":true}` (probe uptime).
 3. `/api/livekit/token?room=&name=` → terbitkan JWT video (lihat `livekit.ts`).
-4. `/auth/github/callback` → alur OAuth GitHub (lihat `githubOAuth.ts`).
-5. `/auth/google/callback` → alur OAuth Google/Gmail (lihat `googleOAuth.ts`).
-6. `/ws` → upgrade WebSocket ke Durable Object `HuddleDO` (satu global).
-7. lainnya → `env.ASSETS.fetch` (serve frontend build).
+4. `/ws` → upgrade WebSocket ke Durable Object `HuddleDO` (satu global).
+5. lainnya → `env.ASSETS.fetch` (serve frontend build).
 
 ### `src/huddleDO.ts` — Durable Object (inti realtime)
 Objek persist yang **memiliki**:
@@ -90,7 +88,7 @@ Objek persist yang **memiliki**:
 - Metode `handle(ws, event, data, ack)` = **router semua event** (switch besar
   atas `SOCKET_EVENTS`): create/join/leave room, chat, signaling, muting,
   hand-raise, layout, settings, background, invite, reactions, polls, captions,
-  waiting room, end meeting, auth (`auth:register/login/me/logout`), dan
+  waiting room, end meeting, auth (`auth:register/login/me/logout/forgot/reset`), dan
   dashboard (`dash:getHistory/schedule/getSchedule/cancelSchedule`).
 
 Cara kerja singkat:
@@ -104,7 +102,7 @@ Cara kerja singkat:
 ### `src/database.ts` — lapisan D1
 Menggantikan D1Client HTTP lama; memakai **binding D1 native** (`env.DB`).
 - `ensureSchema(db)` — buat tabel `users`, `sessions`, `meeting_history`,
-  `scheduled_meetings` (idempotent).
+  `scheduled_meetings`, `password_resets` (idempotent).
 - `DB` class — CRUD: sesi, user, riwayat meeting, jadwal meeting.
 
 ### `src/password.ts` — hashing password
@@ -114,16 +112,6 @@ Workers tidak punya `scrypt` Node, jadi diganti PBKDF2 yang setara aman.
 ### `src/livekit.ts` — token video LiveKit
 Menerbitkan **JWT HS256** (sign via WebCrypto) yang memberi izin join ruang
 LiveKit + publish/subscribe. Menggantikan `livekit-server-sdk` (tak jalan di edge).
-
-### `src/githubOAuth.ts` — login GitHub
-Callback OAuth: tukar `code` → access token GitHub → ambil profil + email →
-find-or-create user di D1 → set session → redirect ke `CLIENT_URL/?auth_token=...`.
-
-### `src/googleOAuth.ts` — "Sign in with Google" (Gmail)
-Callback OAuth Google: tukar `code` → access token (endpoint token Google) →
-ambil profil (id/name/email via `/oauth2/v2/userinfo`) → find-or-create user di D1
-(dengan `google_id`) → set session → redirect ke `CLIENT_URL/?auth_token=...`.
-Butuh secret `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` + var `CLIENT_URL`.
 
 ---
 
@@ -192,7 +180,7 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 ### `src/pages/`
 | Page | Guna |
 |------|------|
-| `HomePage` | Landing + dashboard: hero (New meeting / join code), feature strip, sign-in modal (email/GitHub), admin Schedule & History views. |
+| `HomePage` | Landing + dashboard: hero (New meeting / join code), feature strip, sign-in modal (email/password + lupa-password), admin Schedule & History views. |
 | `RoomPage` | Tampilan meeting utama: header, video area, sidebar chat/participant, ControlBar, semua modal, listener WebSocket. |
 
 ### `src/__tests__/`

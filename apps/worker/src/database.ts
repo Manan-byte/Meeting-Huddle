@@ -14,8 +14,6 @@ export interface StoredUser {
   email: string;
   passwordHash: string;
   salt: string;
-  githubId?: string;
-  googleId?: string;
   createdAt: number;
 }
 
@@ -127,8 +125,6 @@ export class DB {
       email: row.email as string,
       passwordHash: row.password_hash as string,
       salt: row.salt as string,
-      githubId: (row.github_id as string) ?? undefined,
-      googleId: (row.google_id as string) ?? undefined,
       createdAt: row.created_at as number,
     };
   }
@@ -137,32 +133,22 @@ export class DB {
     return this.userFromQuery("SELECT * FROM users WHERE email = ?", email.trim().toLowerCase());
   }
 
-  async findUserByGithubId(githubId: string): Promise<StoredUser | undefined> {
-    return this.userFromQuery("SELECT * FROM users WHERE github_id = ?", githubId);
-  }
-
-  async findUserByGoogleId(googleId: string): Promise<StoredUser | undefined> {
-    return this.userFromQuery("SELECT * FROM users WHERE google_id = ?", googleId);
-  }
-
   async findUserById(id: string): Promise<StoredUser | undefined> {
     return this.userFromQuery("SELECT * FROM users WHERE id = ?", id);
   }
 
-  async createUser(name: string, email: string, passwordHash: string, salt: string, githubId?: string, googleId?: string): Promise<StoredUser> {
+  async createUser(name: string, email: string, passwordHash: string, salt: string): Promise<StoredUser> {
     const user: StoredUser = {
       id: uuid(),
       name: name.trim(),
       email: email.trim().toLowerCase(),
       passwordHash,
       salt,
-      githubId,
-      googleId,
       createdAt: Date.now(),
     };
     await this.db
-      .prepare("INSERT INTO users (id, name, email, password_hash, salt, github_id, google_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-      .bind(user.id, user.name, user.email, user.passwordHash, user.salt, user.githubId ?? null, user.googleId ?? null, user.createdAt)
+      .prepare("INSERT INTO users (id, name, email, password_hash, salt, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(user.id, user.name, user.email, user.passwordHash, user.salt, user.createdAt)
       .run();
     return user;
   }

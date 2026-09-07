@@ -75,10 +75,6 @@ Secret yang didukung:
 | Secret | Wajib? | Deskripsi |
 |--------|--------|-----------|
 | `LIVEKIT_API_SECRET` | Ya (untuk video) | LiveKit API secret (LiveKit Cloud → project → API keys) |
-| `GITHUB_CLIENT_ID` | Opsional | GitHub OAuth app client id |
-| `GITHUB_CLIENT_SECRET` | Opsional | GitHub OAuth app client secret |
-| `GOOGLE_CLIENT_ID` | Opsional | Google OAuth client id ("Sign in with Google") |
-| `GOOGLE_CLIENT_SECRET` | Opsional | Google OAuth client secret |
 
 ### 3. Vars (non-secret, di `wrangler.toml` `[vars]`)
 
@@ -93,7 +89,7 @@ CLIENT_URL = "https://<worker>.workers.dev"
 |-----|--------|-----------|
 | `LIVEKIT_URL` | Ya (video) | LiveKit server URL |
 | `LIVEKIT_API_KEY` | Ya (video) | LiveKit API key |
-| `CLIENT_URL` | Opsional | Base URL untuk invite links & OAuth callback (GitHub/Google); default folder |
+| `CLIENT_URL` | Opsional | Base URL untuk invite links & redirect login (email flow); default folder |
 
 ## Build & Deploy
 
@@ -118,37 +114,10 @@ Buka URL tersebut. Worker menyajikan **semuanya** di satu origin:
 - Frontend (build `apps/web/dist`, via `assets` binding)
 - `GET /health` → `{"ok":true}`
 - `GET /api/livekit/token?room=&name=` → JWT LiveKit
-- `GET /auth/github/callback` → GitHub OAuth callback
-- `GET /auth/google/callback` → Google OAuth callback
 - `GET /ws` → WebSocket realtime (Durable Object)
 
-## Env untuk GitHub OAuth (opsional)
-
-1. Buat OAuth App di GitHub (Settings → Developer settings → OAuth Apps):
-   - **Homepage URL**: `https://<worker>.workers.dev`
-   - **Callback URL**: `https://<worker>.workers.dev/auth/github/callback`
-2. Set `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` sebagai secrets worker.
-3. Set `CLIENT_URL=https://<worker>.workers.dev` di `[vars]`.
-
-Tanpa konfigurasi ini, tombol GitHub di sign-in menampilkan toast "belum dikonfigurasi".
-
-## Env untuk Google OAuth / "Sign in with Google" (opsional)
-
-1. Buka **https://console.cloud.google.com/apis/credentials** → **Create Credentials →
-   OAuth client ID → Web application**.
-   - **Authorized redirect URIs**: `https://<worker>.workers.dev/auth/google/callback`
-2. Set `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` sebagai secrets worker.
-3. Set `CLIENT_URL=https://<worker>.workers.dev` di `[vars]`.
-4. Buat `apps/web/.env` (gitignored):
-   ```
-   VITE_GOOGLE_CLIENT_ID=<client_id>
-   ```
-   lalu `pnpm --filter @meet-app/web build` + `npx wrangler deploy` — sehingga tombol
-   "Continue with Google" ter-bundle dengan client id.
-
-Tanpa langkah 4, tombol tetap tampil tapi menampilkan toast "belum dikonfigurasi".
-Tanpa step 1–3, callback `/auth/google/callback` menampilkan error "Google OAuth is not
-configured".
+> **Auth**: email/password saja (register, login, lupa-password). Tidak ada OAuth —
+> tidak perlu sinkron callback URL di console eksternal.
 
 ## Custom Domain (opsional, permanen)
 
@@ -218,9 +187,9 @@ Ketika melebihi kapasitas satu DO (ribuan koneksi simultan), langkah berikut:
 - **Max participants per room**: `ROOM_CONFIG.MAX_PARTICIPANTS` (10); naikkan untuk
   meeting lebih besar — LiveKit SFU menangani banyak peserta.
 - **HTTPS**: Worker menyediakan HTTPS otomatis (WebRTC aman) tanpa konfigurasi.
-- **GitHub OAuth**: diimplementasikan di Worker (callback + token exchange); butuh
-  `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` + `CLIENT_URL`. Password reset belum
-  diimplementasikan.
+- **Auth**: email/password saja (register, login, lupa-password dengan reset code
+  on-screen). Tidak ada OAuth Google/GitHub. Password reset belum mengirim email
+  (code ditampilkan di layar karena free tier tanpa SMTP).
 - **AI Companion**: handler keyword-extraction ada di Worker, tapi **tidak disurface di
   web UI** (dihapus di v0.2).
 - **Live Captions**: tergantung dukungan Web Speech API browser (Chrome/Edge terutama).

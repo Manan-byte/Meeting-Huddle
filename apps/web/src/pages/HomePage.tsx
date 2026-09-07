@@ -175,7 +175,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
     if (code) setJoinCode(code.toUpperCase());
   }, []);
 
-  // GitHub OAuth callback: the server redirects to /?auth_token=<token>.
+  // Session restore from a server redirect (?auth_token= or ?auth_error=).
   // Store the token; AuthContext restores the session via auth:me on connect.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -187,7 +187,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
       window.history.replaceState({}, "", window.location.pathname);
     }
     if (error) {
-      showToast(`GitHub login: ${error}`);
+      showToast(`Sign-in error: ${error}`);
     }
   }, []);
 
@@ -1696,48 +1696,6 @@ heroRight: {
   authBrandText: { fontSize: 16, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em", fontFamily: "var(--font-display)" },
   authTitle: { fontSize: 26, fontWeight: 800, color: "var(--text)", margin: 0, textAlign: "center", marginTop: 8, fontFamily: "var(--font-display)", letterSpacing: "-0.03em" },
   authSub: { fontSize: 13, color: "var(--text-muted)", margin: 0, textAlign: "center", marginBottom: 10 },
-  githubBtn: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: "13px 16px",
-    fontSize: 14,
-    fontWeight: 600,
-    borderRadius: 999,
-    border: "1px solid var(--border)",
-    background: "var(--bg-soft)",
-    color: "var(--text)",
-    cursor: "pointer",
-  },
-  googleBtn: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: "13px 16px",
-    fontSize: 14,
-    fontWeight: 600,
-    borderRadius: 999,
-    border: "1px solid var(--border)",
-    background: "#fff",
-    color: "var(--text)",
-    cursor: "pointer",
-  },
-  emailBtn: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: "13px 16px",
-    fontSize: 14,
-    fontWeight: 600,
-    borderRadius: 999,
-    border: "1px solid var(--border)",
-    background: "var(--bg-soft)",
-    color: "var(--text)",
-    cursor: "pointer",
-  },
   authBack: {
     alignSelf: "flex-start",
     padding: "4px 0",
@@ -1749,21 +1707,6 @@ heroRight: {
     cursor: "pointer",
     marginBottom: 2,
   },
-  authDivider: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    color: "var(--text-dim)",
-    fontSize: 12,
-    margin: "4px 0",
-    width: "100%",
-  },
-  authDividerLine: {
-    flex: 1,
-    height: 1,
-    background: "var(--border)",
-  },
-  authDividerText: { whiteSpace: "nowrap" },
   authField: {
     position: "relative",
     display: "flex",
