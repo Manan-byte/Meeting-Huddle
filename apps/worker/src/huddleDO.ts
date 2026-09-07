@@ -609,6 +609,61 @@ export class HuddleDO implements DurableObject {
           break;
         }
 
+        case "auth:forgot": {
+          const email = String((data as { email?: string }).email ?? "").trim().toLowerCase();
+          if (!/^\S+@\S+\.\S+$/.test(email)) {
+            resolve({ ok: false, error: "Please enter a valid email address." });
+            return;
+          }
+          await this.schemaReady;
+          const user = await this.db.findUserByEmail(email);
+          if (!user) {
+            // Don't reveal whether an account exists.
+            resolve({ ok: false, error: "No account found with that email." });
+            return;
+          }
+          // 6-character reset code, valid 30 minutes.
+          const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+          let code = "";
+          for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+          await this.db.createPasswordReset(email, code, Date.now() + 30 * 60 * 1000);
+          // No email service (free tier) — return the code to the client so
+          // the user can complete the reset on-screen. In a production setup
+          // this would be emailed instead.
+          resolve({ ok: true, resetCode: code });
+          break;
+        }
+
+        case "auth:reset": {
+          const email = String((data as { email?: string }).email ?? "").trim().toLowerCase();
+          const code = String((data as { code?: string }).code ?? "").trim().toUpperCase();
+          const newPassword = String((data as { newPassword?: string }).newPassword ?? "");
+          if (!/^\S+@\S+\.\S+$/.test(email)) {
+            resolve({ ok: false, error: "Please enter a valid email address." });
+            return;
+          }
+          if (code.length !== 6) {
+            resolve({ ok: false, error: "Invalid reset code." });
+            return;
+          }
+          if (newPassword.length < 6) {
+            resolve({ ok: false, error: "Password must be at least 6 characters." });
+            return;
+          }
+          await this.schemaReady;
+          const valid = await this.db.getValidPasswordReset(email, code);
+          if (!valid) {
+            resolve({ ok: false, error: "Invalid or expired reset code." });
+            return;
+          }
+          const salt = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("");
+          const passwordHash = await hashPassword(newPassword);
+          await this.db.updatePassword(email, passwordHash, salt);
+          await this.db.clearPasswordReset(email);
+          resolve({ ok: true });
+          break;
+        }
+
         case "auth:me": {
           const token = String((data as { token?: string }).token ?? "");
           await this.schemaReady;

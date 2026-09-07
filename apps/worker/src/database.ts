@@ -83,6 +83,10 @@ export async function ensureSchema(db: D1Database): Promise<void> {
       time TEXT NOT NULL, code TEXT NOT NULL, created_by TEXT NOT NULL,
       created_at INTEGER NOT NULL, invitees TEXT
     )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS password_resets (
+      email TEXT NOT NULL, code TEXT NOT NULL, expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL, PRIMARY KEY (email)
+    )`),
   ]);
 
   // Migrate older databases that lack the google_id column (added later).
@@ -161,6 +165,37 @@ export class DB {
       .bind(user.id, user.name, user.email, user.passwordHash, user.salt, user.githubId ?? null, user.googleId ?? null, user.createdAt)
       .run();
     return user;
+  }
+
+  // ── Password reset ─────────────────────────────────────────────────
+  /** Store a reset code for an email (replaces any previous code). */
+  async createPasswordReset(email: string, code: string, expiresAt: number): Promise<void> {
+    await this.db
+      .prepare("INSERT INTO password_resets (email, code, expires_at, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET code = excluded.code, expires_at = excluded.expires_at, created_at = excluded.created_at")
+      .bind(email, code, expiresAt, Date.now())
+      .run();
+  }
+
+  /** Fetch a valid (non-expired) reset code for an email. */
+  async getValidPasswordReset(email: string, code: string): Promise<boolean> {
+    const row = await this.db
+      .prepare("SELECT expires_at FROM password_resets WHERE email = ? AND code = ?")
+      .bind(email, code)
+      .first<{ expires_at: number }>();
+    return !!row && row.expires_at > Date.now();
+  }
+
+  /** Clear any reset code for an email after a successful reset. */
+  async clearPasswordReset(email: string): Promise<void> {
+    await this.db.prepare("DELETE FROM password_resets WHERE email = ?").bind(email).run();
+  }
+
+  /** Replace a user's password hash + salt. */
+  async updatePassword(email: string, passwordHash: string, salt: string): Promise<void> {
+    await this.db
+      .prepare("UPDATE users SET password_hash = ?, salt = ? WHERE email = ?")
+      .bind(passwordHash, salt, email)
+      .run();
   }
 
   // ── Meeting history ─────────────────────────────────────────────────

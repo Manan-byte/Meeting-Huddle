@@ -126,11 +126,17 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledMeeting[]>([]);
   const [showAuth, setShowAuth] = useState(false);
-  const [authMode, setAuthMode] = useState<"choose" | "email" | "register">("choose");
+  const [authMode, setAuthMode] = useState<"choose" | "email" | "register" | "forgot">("choose");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authName, setAuthName] = useState("");
   const [authError, setAuthError] = useState("");
+  /** Reset code issued by auth:forgot (shown on-screen — no email service). */
+  const [authResetCode, setAuthResetCode] = useState("");
+  /** User-typed reset code for auth:reset. */
+  const [authResetCodeInput, setAuthResetCodeInput] = useState("");
+  /** True once auth:forgot succeeded — show the code + new-password step. */
+  const [authResetIssued, setAuthResetIssued] = useState(false);
   const [schedTitle, setSchedTitle] = useState("");
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("");
@@ -824,9 +830,105 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                   <Plus size={16} /> Create account
                 </button>
               </>
+            ) : authMode === "forgot" ? (
+              <>
+                {/* Forgot password — email → reset code → new password */}
+                <button
+                  style={styles.authBack}
+                  onClick={() => { setAuthMode("email"); setAuthError(""); setAuthResetIssued(false); setAuthResetCode(""); }}
+                >
+                  ← Back
+                </button>
+
+                {!authResetIssued ? (
+                  <>
+                    <p style={styles.authSub}>
+                      Enter your account email. We'll issue a one-time reset code.
+                    </p>
+                    <div style={styles.authField}>
+                      <Mail size={16} style={styles.authFieldIcon} />
+                      <input
+                        style={styles.authInput}
+                        type="email"
+                        placeholder="Email"
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                      />
+                    </div>
+                    {authError && <div style={styles.authError}>{authError}</div>}
+                    <button
+                      className="dash-primary" style={styles.authSubmit}
+                      onClick={async () => {
+                        if (!socket) return;
+                        socket.emit("auth:forgot", { email: authEmail }, (res: { ok: boolean; resetCode?: string; error?: string }) => {
+                          if (res.ok && res.resetCode) {
+                            setAuthResetCode(res.resetCode);
+                            setAuthResetIssued(true);
+                            setAuthError("");
+                          } else {
+                            setAuthError(res.error ?? "Could not issue a reset code.");
+                          }
+                        });
+                      }}
+                    >
+                      Send reset code
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={styles.authNote}>
+                      Reset code (30 min): <strong>{authResetCode}</strong>
+                    </div>
+                    <div style={styles.authField}>
+                      <Lock size={16} style={styles.authFieldIcon} />
+                      <input
+                        style={styles.authInput}
+                        type="text"
+                        placeholder="Reset code"
+                        value={authResetCodeInput}
+                        onChange={(e) => setAuthResetCodeInput(e.target.value.toUpperCase())}
+                        maxLength={6}
+                      />
+                    </div>
+                    <div style={styles.authField}>
+                      <Lock size={16} style={styles.authFieldIcon} />
+                      <input
+                        style={styles.authInput}
+                        type="password"
+                        placeholder="New password (min 6 chars)"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                      />
+                    </div>
+                    {authError && <div style={styles.authError}>{authError}</div>}
+                    <button
+                      className="dash-primary" style={styles.authSubmit}
+                      onClick={async () => {
+                        if (!socket) return;
+                        socket.emit("auth:reset", { email: authEmail, code: authResetCodeInput, newPassword: authPassword }, (res: { ok: boolean; error?: string }) => {
+                          if (res.ok) {
+                            setShowAuth(false); setAuthMode("choose"); setAuthError(""); setAuthPassword(""); setAuthResetIssued(false); setAuthResetCode(""); setAuthResetCodeInput("");
+                            showToast("Password updated — sign in with your new password.");
+                          } else {
+                            setAuthError(res.error ?? "Reset failed. Try again.");
+                          }
+                        });
+                      }}
+                    >
+                      Reset password
+                    </button>
+                  </>
+                )}
+              </>
             ) : (
               <>
                 {/* Email + password login */}
+                <button
+                  style={styles.authBack}
+                  onClick={() => { setAuthMode("choose"); setAuthError(""); }}
+                >
+                  ← Back
+                </button>
                 <div style={styles.authField}>
                   <Mail size={16} style={styles.authFieldIcon} />
                   <input
@@ -849,7 +951,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                 </div>
 
                 <div style={styles.authForgotRow}>
-                  <button style={styles.authForgot} onClick={() => showToast("Password reset is not configured.")}>
+                  <button style={styles.authForgot} onClick={() => { setAuthMode("forgot"); setAuthError(""); setAuthResetIssued(false); setAuthResetCode(""); }}>
                     Forgot password?
                   </button>
                 </div>
@@ -1774,6 +1876,16 @@ heroRight: {
     color: "var(--danger)",
     background: "color-mix(in srgb, var(--danger) 8%, transparent)",
     borderRadius: 999,
+  },
+  authNote: {
+    padding: "9px 14px",
+    fontSize: 13,
+    fontWeight: 500,
+    color: "var(--text)",
+    background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+    border: "1px solid var(--border)",
+    borderRadius: 999,
+    textAlign: "center",
   },
   authSubmit: {
     display: "inline-flex",
