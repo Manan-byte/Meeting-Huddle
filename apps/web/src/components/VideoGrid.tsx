@@ -149,8 +149,8 @@ export function VideoGrid({
 const styles: Record<string, React.CSSProperties> = {
   grid: {
     display: "grid",
-    gap: 8,
-    padding: 8,
+    gap: 12,
+    padding: 12,
     flex: 1,
     height: "100%",
     overflow: "hidden",
@@ -165,8 +165,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sidebarLayout: {
     display: "flex",
-    gap: 8,
-    padding: 8,
+    gap: 12,
+    padding: 12,
     flex: 1,
     overflow: "hidden",
   },

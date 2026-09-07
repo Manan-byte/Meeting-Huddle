@@ -36,6 +36,8 @@ import {
   BarChart3,
   Radio,
   Keyboard,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useState } from "react";
 import type { LayoutMode } from "@meet-app/shared";
@@ -326,6 +328,7 @@ export function ControlBar({
             <div style={styles.moreMenu}>
               {isRecording && (
                 <button
+                  className="ctl-more-item"
                   style={styles.moreItem}
                   onClick={() => { onStopRecord(); setShowMore(false); }}
                 >
@@ -334,18 +337,20 @@ export function ControlBar({
               )}
               <div style={styles.moreDivider} />
               <button
+                className="ctl-more-item"
                 style={styles.moreItem}
                 onClick={() => { onToggleDark(); setShowMore(false); }}
               >
-                {isDark ? "☀️" : "🌙"} {isDark ? "Light mode" : "Dark mode"}
+                {isDark ? <Sun size={16} /> : <Moon size={16} />} {isDark ? "Light mode" : "Dark mode"}
               </button>
               <button
+                className="ctl-more-item"
                 style={styles.moreItem}
                 onClick={() => { onToggleSettings(); setShowMore(false); }}
               >
                 <Settings size={16} /> Settings
               </button>
-              <div style={styles.moreItem}>
+              <div className="ctl-more-item" style={styles.moreItem}>
                 <Keyboard size={16} /> Push-to-talk key
                 <input
                   style={styles.hotkeyInput}
@@ -361,12 +366,14 @@ export function ControlBar({
               </div>
               <div style={styles.moreDivider} />
               <button
+                className="ctl-more-item"
                 style={styles.moreItem}
                 onClick={() => { onToggleReactions(); setShowMore(false); }}
               >
                 <Smile size={16} /> {showReactions ? "Hide Reactions" : "Reactions"}
               </button>
               <button
+                className="ctl-more-item"
                 style={styles.moreItem}
                 onClick={() => { onTogglePolls(); setShowMore(false); }}
               >
@@ -396,10 +403,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "10px 20px",
+    padding: "14px 24px",
     borderTop: "1px solid var(--border)",
-    background: "color-mix(in srgb, var(--bg-card) 85%, transparent)",
-    backdropFilter: "blur(10px)",
+    background: "color-mix(in srgb, var(--bg-card) 82%, transparent)",
+    backdropFilter: "blur(14px)",
   },
   leftSpacer: {
     flex: 1,
@@ -407,11 +414,12 @@ const styles: Record<string, React.CSSProperties> = {
   controls: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
-    padding: "4px 8px",
-    borderRadius: 999,
+    gap: 10,
+    padding: "6px 10px",
+    borderRadius: "var(--radius-pill)",
     background: "var(--bg-raised)",
     border: "1px solid var(--border)",
+    boxShadow: "var(--elev-floating)",
   },
   group: {
     display: "flex",
@@ -434,22 +442,23 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: "50%",
     border: "none",
     color: "var(--text)",
     cursor: "pointer",
     position: "relative",
-    transition: "background 0.2s, box-shadow 0.2s, transform 0.15s",
+    transition:
+      "background var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard), transform var(--motion-fast) var(--ease-standard)",
   },
   chatBadge: {
     position: "absolute",
-    top: 0,
-    right: 0,
-    minWidth: 16,
-    height: 16,
-    padding: "0 4px",
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    padding: "0 5px",
     borderRadius: 999,
     background: "var(--danger)",
     color: "#fff",
@@ -459,6 +468,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     zIndex: 5,
+    boxShadow: "0 2px 8px rgba(234,67,53,0.4)",
   },
   moreWrap: {
     position: "relative",
@@ -466,18 +476,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   moreMenu: {
     position: "absolute",
-    bottom: 46,
+    bottom: 50,
     right: 0,
     display: "flex",
     flexDirection: "column",
     gap: 2,
     padding: 6,
-    borderRadius: 12,
+    borderRadius: "var(--radius-2xl)",
     background: "var(--bg-card)",
     border: "1px solid var(--border)",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
+    boxShadow: "var(--elev-floating)",
     zIndex: 30,
-    minWidth: 150,
+    minWidth: 170,
   },
   moreItem: {
     display: "flex",
@@ -516,6 +526,6 @@ const styles: Record<string, React.CSSProperties> = {
   leaveButton: {
     background: "var(--danger)",
     color: "#fff",
-    boxShadow: "0 4px 14px rgba(234,67,53,0.35)",
+    boxShadow: "var(--elev-floating), 0 4px 16px rgba(234,67,53,0.3)",
   },
 };

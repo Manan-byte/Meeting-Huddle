@@ -101,8 +101,8 @@ export function SpeakerView({
 const styles: Record<string, React.CSSProperties> = {
   container: {
     display: "flex",
-    gap: 8,
-    padding: 8,
+    gap: 12,
+    padding: 12,
     flex: 1,
     overflow: "hidden",
   },
@@ -114,7 +114,7 @@ const styles: Record<string, React.CSSProperties> = {
   sidebar: {
     display: "flex",
     flexDirection: "column",
-    gap: 8,
+    gap: 12,
     width: 200,
     overflow: "auto",
   },

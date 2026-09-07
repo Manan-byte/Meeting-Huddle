@@ -11,8 +11,8 @@
  *              shared types (User)
  */
 
-import { useState } from "react";
 import type { User } from "@meet-app/shared";
+import "../styles/ParticipantList.css";
 
 interface ParticipantListProps {
   /** All participants currently in the room. */
@@ -29,7 +29,6 @@ export function ParticipantList({ participants, currentUser }: ParticipantListPr
   return (
     <div style={styles.container}>
       <header style={styles.header}>
-        <span style={styles.headerAccent} aria-hidden="true" />
         <h3 style={styles.heading}>
           Participants
           <span style={styles.count}>{participants.length}</span>
@@ -59,16 +58,13 @@ function ParticipantRow({
   isYou: boolean;
   hasDivider: boolean;
 }) {
-  const [hovered, setHovered] = useState(false);
   return (
     <li
+      className="pl-row"
       style={{
         ...styles.item,
         ...(hasDivider ? styles.itemDivider : null),
-        ...(hovered ? styles.itemHover : null),
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {/* Avatar: first two initials */}
       <div style={{ ...styles.avatar, ...(isYou ? styles.avatarYou : null) }}>
@@ -161,13 +157,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "14px 16px",
     borderBottom: "1px solid var(--border)",
   },
-  headerAccent: {
-    width: 3,
-    height: 16,
-    borderRadius: 2,
-    background: "var(--accent)",
-    flexShrink: 0,
-  },
   heading: {
     display: "flex",
     alignItems: "center",
@@ -199,21 +188,19 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: 12,
     padding: "10px 16px",
-    transition: "background 0.15s ease",
+    transition:
+      "background var(--motion-fast) var(--ease-standard)",
   },
   itemDivider: {
     borderBottom: "1px solid var(--border)",
-  },
-  itemHover: {
-    background: "var(--bg-soft)",
   },
   avatar: {
     width: 36,
     height: 36,
     borderRadius: "50%",
     background:
-      "radial-gradient(circle at 30% 20%, rgba(79, 70, 229,0.35) 0%, transparent 60%), linear-gradient(135deg, #eef7e2 0%, #d9f2bd 100%)",
-    color: "var(--accent-dark)",
+      "radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 60%), var(--bg-soft)",
+    color: "var(--text-muted)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -221,7 +208,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     flexShrink: 0,
     border: "1px solid var(--border)",
-    boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
+    boxShadow: "0 1px 2px rgba(8,11,18,0.06)",
   },
   avatarYou: {
     borderColor: "var(--accent)",
@@ -276,7 +263,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 26,
     height: 26,
     borderRadius: "50%",
-    background: "rgba(234,67,53,0.15)",
+    background: "color-mix(in srgb, var(--danger) 18%, transparent)",
     color: "var(--danger)",
   },
   noVideoBadge: {

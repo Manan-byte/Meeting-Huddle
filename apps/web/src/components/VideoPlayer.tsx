@@ -129,14 +129,14 @@ export function VideoPlayer({
 const styles: Record<string, CSSProperties> = {
   container: {
     position: "relative",
-    borderRadius: "var(--radius-lg, 12px)",
+    borderRadius: "var(--radius-lg, 16px)",
     overflow: "hidden",
     background: "var(--bg-raised, #101313)",
     width: "100%",
     aspectRatio: "16/9",
     minWidth: 0,
     border: "1px solid var(--border, #28302b)",
-    boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+    boxShadow: "var(--elev-raised)",
   },
   video: {
     width: "100%",
@@ -153,11 +153,11 @@ const styles: Record<string, CSSProperties> = {
     width: "100%",
     height: "100%",
     fontSize: 40,
-    fontWeight: 700,
-    letterSpacing: "0.02em",
+    fontWeight: 800,
+    letterSpacing: "-0.02em",
     color: "var(--text, #f0f2e9)",
     background:
-      "radial-gradient(circle at 30% 20%, rgba(79, 70, 229,0.18) 0%, transparent 60%), linear-gradient(135deg, #1c221f 0%, #0b0d0d 100%)",
+      "radial-gradient(ellipse 80% 70% at 50% 30%, color-mix(in srgb, var(--accent, #7a82ff) 16%, transparent) 0%, transparent 70%), var(--bg-raised, #0b0d0d)",
   },
   speakingBadge: {
     position: "absolute",
@@ -168,7 +168,8 @@ const styles: Record<string, CSSProperties> = {
     gap: 2,
     padding: "5px 7px",
     borderRadius: 8,
-    background: "rgba(11,13,13,0.6)",
+    background: "rgba(8,11,18,0.6)",
+    backdropFilter: "blur(4px)",
     zIndex: 5,
   },
   speakingBar: {
@@ -190,15 +191,16 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     borderRadius: "50%",
-    background: "rgba(11,13,13,0.6)",
+    background: "rgba(8,11,18,0.6)",
+    backdropFilter: "blur(4px)",
   },
   nameOverlay: {
     position: "absolute",
     bottom: 10,
     left: 10,
     padding: "5px 12px",
-    background: "rgba(11,13,13,0.72)",
-    backdropFilter: "blur(4px)",
+    background: "rgba(8,11,18,0.68)",
+    backdropFilter: "blur(6px)",
     color: "#ffffff", // always white so it stays readable on any background
     fontSize: 13,
     fontWeight: 500,
@@ -210,6 +212,7 @@ const styles: Record<string, CSSProperties> = {
     maxWidth: "calc(100% - 20px)",
     overflow: "hidden",
     whiteSpace: "nowrap",
+    boxShadow: "0 2px 8px rgba(8,11,18,0.25)",
   },
   nameText: {
     overflow: "hidden",

@@ -285,6 +285,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
               <button
                 key={item.label}
                 onClick={() => goTo(item.view)}
+                className="hp-nav-link"
                 style={{ ...styles.navLink, ...(active ? styles.navLinkActive : {}) }}
               >
                 <Icon size={16} />
@@ -299,10 +300,10 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
             <div style={styles.navUser}>
               <span style={styles.navAvatar}>{(displayName[0] || "H").toUpperCase()}</span>
               <span style={styles.navName}>{displayName}</span>
-              <button style={styles.signOutBtn} onClick={logout}>Sign out</button>
+              <button className="hp-ghost" style={styles.signOutBtn} onClick={logout}>Sign out</button>
             </div>
           ) : (
-            <button style={styles.signInBtn} onClick={() => setShowAuth(true)}>Sign in</button>
+            <button className="hp-signin" style={styles.signInBtn} onClick={() => setShowAuth(true)}>Sign in</button>
           ))}
         </div>
       </header>
@@ -311,96 +312,113 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
         {/* â”€â”€ Dashboard / Landing hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {activeView === "dashboard" && (
           <>
-            <section style={styles.hero}>
+            <section className="hp-hero" style={styles.hero}>
               <div style={styles.heroLeft}>
+                <span style={styles.heroEyebrow}><span style={styles.heroEyebrowDot} />WebRTC · LiveKit · Cloudflare Edge</span>
                 <h1 style={styles.heroTitle}>{viewTitle}</h1>
                 <p style={styles.heroSubtitle}>
                   Free, browser-based video meetings â€” powered by Cloudflare edge infrastructure.
                   Share screens, chat, poll, and record in real time with no install.
                 </p>
 
-                <div style={styles.heroForm}>
-                  <input
-                    style={styles.heroInput}
-                    type="text"
-                    placeholder="Enter your name"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                  />
-                  <button
-                    className="dash-primary"
-                    style={styles.heroBtn}
-                    onClick={handleCreate}
-                    disabled={!userName.trim() || isCreating}
-                  >
-                    <Video size={16} /> {isCreating ? "Creating..." : "New meeting"}
-                  </button>
-                </div>
-
-                <div style={styles.joinRow}>
-                  <div style={styles.divider} />
-                  <span style={styles.or}>or join with a code</span>
-                  <div style={styles.divider} />
-                </div>
-
-                <div style={styles.heroForm}>
-                  <input
-                    style={{ ...styles.heroInput, ...styles.codeInput }}
-                    type="text"
-                    placeholder="Enter code"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                  />
-                  <button style={styles.joinBtn} onClick={handleJoin} disabled={!userName.trim() || !joinCode.trim() || isCreating}>
-                    <ArrowRight size={16} /> Join
-                  </button>
-                </div>
-
-                {error && (
-                  <div style={styles.error}>
-                    <XCircle size={14} /> <span>{error}</span>
+                <div className="hp-hero-card glass" style={styles.heroPanel}>
+                  <div style={styles.heroForm}>
+                    <input
+                      style={styles.heroInput}
+                      type="text"
+                      placeholder="Enter your name"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                    />
+                    <button
+                      className="dash-primary"
+                      style={styles.heroBtn}
+                      onClick={handleCreate}
+                      disabled={!userName.trim() || isCreating}
+                    >
+                      <Video size={16} /> {isCreating ? "Creating..." : "New meeting"}
+                    </button>
                   </div>
-                )}
+
+                  <div style={styles.joinRow}>
+                    <div style={styles.divider} />
+                    <span style={styles.or}>or join with a code</span>
+                    <div style={styles.divider} />
+                  </div>
+
+                  <div style={styles.heroForm}>
+                    <input
+                      style={{ ...styles.heroInput, ...styles.codeInput }}
+                      type="text"
+                      placeholder="Enter code"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      maxLength={6}
+                    />
+                    <button className="hp-ghost" style={styles.joinBtn} onClick={handleJoin} disabled={!userName.trim() || !joinCode.trim() || isCreating}>
+                      <ArrowRight size={16} /> Join
+                    </button>
+                  </div>
+
+                  {error && (
+                    <div style={styles.error}>
+                      <XCircle size={14} /> <span>{error}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Mock video-call illustration */}
-              <div style={styles.heroRight}>
-                <div style={styles.mockGrid}>
-                  {[
-                    { name: "Alice", from: "#4f46e5", to: "#7c3aed" },
-                    { name: "Bob", from: "#0ea5e9", to: "#2563eb" },
-                    { name: "You", from: "#10b981", to: "#059669" },
-                    { name: "Carol", from: "#f59e0b", to: "#ef4444" },
-                  ].map((p) => (
-                    <div key={p.name} style={styles.mockTile}>
-                      <div
-                        style={{
-                          ...styles.mockAvatar,
-                          background: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
-                        }}
-                      >
-                        {p.name[0]}
+              <div className="hp-static" style={styles.heroRight}>
+                <div style={styles.mockFrame}>
+                  <div style={styles.mockTopbar}>
+                    <span style={styles.mockRec}><span style={styles.mockRecDot} />REC</span>
+                    <span style={styles.mockTime}>00:24</span>
+                    <span style={styles.mockIcons}>&bull;&bull;&bull;</span>
+                  </div>
+                  <div style={styles.mockGrid}>
+                    {[
+                      { name: "Alice", from: "#7c6cff", to: "#5658f0" },
+                      { name: "Bob", from: "#52a8ff", to: "#2f6bff" },
+                      { name: "You", from: "#8b6cff", to: "#5a4be8" },
+                      { name: "Carol", from: "#a78bfa", to: "#7c3aed" },
+                    ].map((p) => (
+                      <div key={p.name} style={styles.mockTile}>
+                        <div
+                          style={{
+                            ...styles.mockAvatar,
+                            background: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
+                          }}
+                        >
+                          {p.name[0]}
+                        </div>
+                        <span style={styles.mockName}>{p.name}</span>
                       </div>
-                      <span style={styles.mockName}>{p.name}</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* Feature strip */}
-            <section style={styles.features}>
-              {features.map((f) => {
-                const Icon = f.icon;
-                return (
-                  <div className="dash-card" key={f.title} style={styles.featureCard}>
-                    <span style={styles.featureIcon}><Icon size={20} /></span>
-                    <h3 style={styles.featureTitle}>{f.title}</h3>
-                    <p style={styles.featureDesc}>{f.desc}</p>
-                  </div>
-                );
-              })}
+            <section style={styles.featureBand}>
+              <div style={styles.featureHeader}>
+                <span style={styles.featureEyebrow}>Why Huddle</span>
+                <h2 style={styles.featureHeading}>Built for real meetings</h2>
+                <p style={styles.featureIntro}>Everything your team needs to meet, present, and decide â€” in one tab.</p>
+              </div>
+              <div className="hp-feature-grid" style={styles.features}>
+                {features.map((f) => {
+                  const Icon = f.icon;
+                  return (
+                    <div className="hp-feature" key={f.title} style={styles.featureCard}>
+                      <span style={styles.featureIcon}><Icon size={20} /></span>
+                      <h3 style={styles.featureTitle}>{f.title}</h3>
+                      <p style={styles.featureDesc}>{f.desc}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </section>
 
             {/* Recent meetings â€” admin only */}
@@ -412,7 +430,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                 </div>
                 {history.length === 0 ? (
                   <div style={styles.emptyState}>
-                    <span style={styles.emptyIcon}>ðŸ•“</span>
+                    <span style={styles.emptyIcon}><Clock size={20} /></span>
                     <p style={styles.emptyText}>No past meetings yet â€” start or join one to see it here.</p>
                   </div>
                 ) : (
@@ -427,7 +445,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                     </thead>
                     <tbody>
                       {history.slice(0, 5).map((m) => (
-                        <tr key={m.id} style={styles.tr}>
+                        <tr key={m.id} className="hp-row" style={styles.tr}>
                           <td style={styles.td}>{m.title}</td>
                           <td style={styles.td}><span style={styles.codePill}>{m.code}</span></td>
                           <td style={styles.td}>{m.participants}</td>
@@ -554,13 +572,13 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
             <div className="dash-card" style={styles.viewCard}>
               <h2 style={styles.viewTitle}>Upcoming meetings</h2>
               {scheduled.length === 0 ? (
-                <div style={styles.emptyState}><span style={styles.emptyIcon}>ðŸ—“</span><p style={styles.emptyText}>No upcoming meetings scheduled yet.</p></div>
+                <div style={styles.emptyState}><span style={styles.emptyIcon}><CalendarDays size={20} /></span><p style={styles.emptyText}>No upcoming meetings scheduled yet.</p></div>
               ) : (
                 <table style={styles.table}>
                   <thead><tr><th style={styles.th}>Title</th><th style={styles.th}>Code</th><th style={styles.th}>Date</th><th style={styles.th}>Time</th><th style={styles.th}>Invited</th><th style={styles.th}></th></tr></thead>
                   <tbody>
                     {scheduled.map((m) => (
-                      <tr key={m.id} style={styles.tr}>
+                      <tr key={m.id} className="hp-row" style={styles.tr}>
                         <td style={styles.td}>{m.title}</td>
                         <td style={styles.td}><span style={styles.codePill}>{m.code}</span></td>
                         <td style={styles.td}>{m.date}</td>
@@ -597,13 +615,13 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
               <h2 style={styles.viewTitle}>History</h2>
               <p style={styles.viewDesc}>Meeting records â€” admin only.</p>
               {history.length === 0 ? (
-                <div style={styles.emptyState}><span style={styles.emptyIcon}>ðŸ•“</span><p style={styles.emptyText}>No past meetings yet.</p></div>
+                <div style={styles.emptyState}><span style={styles.emptyIcon}><Clock size={20} /></span><p style={styles.emptyText}>No past meetings yet.</p></div>
               ) : (
                 <table style={styles.table}>
                   <thead><tr><th style={styles.th}>Title</th><th style={styles.th}>Code</th><th style={styles.th}>Participants</th><th style={styles.th}>Time</th></tr></thead>
                   <tbody>
                     {history.map((m) => (
-                      <tr key={m.id} style={styles.tr}>
+                      <tr key={m.id} className="hp-row" style={styles.tr}>
                         <td style={styles.td}>{m.title}</td>
                         <td style={styles.td}><span style={styles.codePill}>{m.code}</span></td>
                         <td style={styles.td}>{m.participants}</td>
@@ -617,11 +635,10 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
           </div>
         )}
 
-        <footer style={styles.footer}>
-          <span style={styles.footerText}>
-            Built with <span style={{ color: "var(--accent-dark)" }}>WebRTC</span> &bull;{" "}
-            <span style={{ color: "var(--accent-dark)" }}>Socket.IO</span> &bull;{" "}
-            <span style={{ color: "var(--accent-dark)" }}>React</span>
+        <footer className="hp-footer">
+          <span className="hp-footer-mark">Huddle</span>
+          <span className="hp-footer-line">
+            Built with <span>WebRTC</span> &middot; <span>Socket.IO</span> &middot; <span>React</span> â€” free video meetings, right in your browser.
           </span>
         </footer>
       </main>
@@ -649,6 +666,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
               <>
                 {/* GitHub login */}
                 <button
+                  className="hp-ghost"
                   style={styles.githubBtn}
                   onClick={() => {
                     const cid = import.meta.env.VITE_GITHUB_CLIENT_ID;
@@ -667,6 +685,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
 
                 {/* Email login */}
                 <button
+                  className="hp-ghost"
                   style={styles.emailBtn}
                   onClick={() => { setAuthMode("email"); setAuthError(""); }}
                 >
@@ -773,7 +792,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
     background: "var(--bg)",
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    fontFamily: "var(--font-body)",
     display: "flex",
     flexDirection: "column",
   },
@@ -783,7 +802,9 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 24,
     padding: "14px 32px",
     borderBottom: "1px solid var(--border)",
-    background: "var(--bg-raised)",
+    background: "color-mix(in srgb, var(--bg-raised) 78%, transparent)",
+    WebkitBackdropFilter: "blur(18px) saturate(160%)",
+    backdropFilter: "blur(18px) saturate(160%)",
     position: "sticky",
     top: 0,
     zIndex: 50,
@@ -791,25 +812,28 @@ const styles: Record<string, React.CSSProperties> = {
   brand: {
     display: "flex",
     alignItems: "center",
-    gap: 9,
+    gap: 10,
     background: "transparent",
     border: "none",
     cursor: "pointer",
+    padding: 0,
   },
   brandIcon: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    background: "var(--accent)",
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)",
+    boxShadow: "0 4px 12px color-mix(in srgb, var(--accent) 40%, transparent)",
   },
   brandText: {
     fontSize: 18,
     fontWeight: 700,
     color: "var(--text)",
     letterSpacing: "-0.02em",
+    fontFamily: "var(--font-display)",
   },
   navLinks: {
     display: "flex",
@@ -821,8 +845,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: "inline-flex",
     alignItems: "center",
     gap: 7,
-    padding: "8px 12px",
-    borderRadius: 8,
+    padding: "8px 14px",
+    borderRadius: 999,
     border: "none",
     background: "transparent",
     color: "var(--text-muted)",
@@ -831,8 +855,8 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   navLinkActive: {
-    background: "rgba(79, 70, 229,0.18)",
-    color: "var(--accent-dark)",
+    background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+    color: "var(--accent)",
     fontWeight: 600,
   },
   navRight: {
@@ -862,7 +886,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 28,
     height: 28,
     borderRadius: "50%",
-    background: "var(--accent)",
+    background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)",
     color: "var(--accent-ink)",
     fontWeight: 700,
     fontSize: 13,
@@ -882,65 +906,99 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--text-muted)",
     cursor: "pointer",
   },
-  main: {
+main: {
     flex: 1,
-    padding: "40px 48px 24px",
-    maxWidth: 1080,
+    padding: "40px 48px 0",
+    maxWidth: 1160,
     width: "100%",
     margin: "0 auto",
     display: "flex",
     flexDirection: "column",
-    gap: 28,
+    gap: 40,
   },
   hero: {
     display: "flex",
     alignItems: "center",
-    gap: 48,
+    gap: 72,
+    padding: "72px 0 24px",
   },
   heroLeft: {
-    flex: 1,
+    flex: 1.05,
     minWidth: 0,
   },
+  heroEyebrow: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    fontFamily: "var(--font-mono)",
+    fontSize: 12,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    fontWeight: 600,
+    color: "var(--accent)",
+    background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--accent) 22%, transparent)",
+    borderRadius: 999,
+    padding: "6px 14px",
+    marginBottom: 22,
+  },
+  heroEyebrowDot: {
+    width: 7,
+    height: 7,
+    borderRadius: "50%",
+    background: "var(--accent)",
+    boxShadow: "0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent)",
+  },
   heroTitle: {
-    fontSize: 40,
+    fontSize: 56,
     fontWeight: 800,
-    lineHeight: 1.15,
+    lineHeight: 1.03,
     color: "var(--text)",
-    letterSpacing: "-0.03em",
+    letterSpacing: "-0.045em",
     margin: 0,
-    marginBottom: 14,
+    marginBottom: 18,
+    fontFamily: "var(--font-display)",
   },
   heroSubtitle: {
-    fontSize: 16,
-    lineHeight: 1.6,
+    fontSize: 17,
+    lineHeight: 1.65,
     color: "var(--text-muted)",
     margin: 0,
-    marginBottom: 24,
+    marginBottom: 28,
+    maxWidth: 500,
+  },
+  heroPanel: {
+    maxWidth: 500,
+    borderRadius: "var(--radius-2xl)",
+    padding: "10px",
+    boxShadow: "var(--elev-raised)",
+    display: "flex",
+    flexDirection: "column",
   },
   heroForm: {
     display: "flex",
     gap: 10,
-    marginBottom: 12,
   },
   heroInput: {
     flex: 1,
-    padding: "12px 16px",
+    padding: "14px 18px",
     fontSize: 15,
-    borderRadius: 12,
+    borderRadius: 999,
     border: "1px solid var(--border)",
     background: "var(--bg-input)",
     color: "var(--text)",
     outline: "none",
+    minWidth: 0,
   },
   heroBtn: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    padding: "12px 22px",
+    padding: "14px 24px",
     fontSize: 14,
-    fontWeight: 700,
-    borderRadius: 12,
+    fontWeight: 600,
+    borderRadius: 999,
     border: "none",
     background: "var(--accent)",
     color: "var(--accent-ink)",
@@ -951,7 +1009,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: 12,
-    margin: "8px 0",
+    margin: "14px 8px",
   },
   divider: {
     flex: 1,
@@ -963,24 +1021,26 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: "var(--text-dim)",
     whiteSpace: "nowrap",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
   },
   joinBtn: {
     display: "inline-flex",
     alignItems: "center",
     gap: 7,
-    padding: "12px 20px",
+    padding: "14px 22px",
     fontSize: 14,
-    fontWeight: 700,
-    borderRadius: 12,
+    fontWeight: 600,
+    borderRadius: 999,
     border: "1px solid var(--border)",
-    background: "var(--bg-soft)",
+    background: "color-mix(in srgb, var(--bg-soft) 60%, transparent)",
     color: "var(--text)",
     cursor: "pointer",
     whiteSpace: "nowrap",
   },
   codeInput: {
-    fontFamily: "monospace",
-    letterSpacing: "0.1em",
+    fontFamily: "var(--font-mono)",
+    letterSpacing: "0.16em",
     fontWeight: 700,
     textTransform: "uppercase",
     textAlign: "center",
@@ -994,28 +1054,69 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     fontWeight: 500,
     color: "var(--danger)",
-    background: "rgba(239,68,68,0.08)",
-    borderRadius: 10,
+    background: "color-mix(in srgb, var(--danger) 8%, transparent)",
+    borderRadius: 999,
+    margin: "6px 6px 0",
   },
   heroRight: {
     flex: 1,
     minWidth: 0,
   },
+  mockFrame: {
+    borderRadius: "var(--radius-2xl)",
+    overflow: "hidden",
+    background: "linear-gradient(160deg, #131722 0%, #0b0e16 100%)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    boxShadow: "var(--elev-floating)",
+  },
+  mockTopbar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "14px 18px",
+    borderBottom: "1px solid rgba(255,255,255,0.07)",
+  },
+  mockRec: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    fontFamily: "var(--font-mono)",
+    fontSize: 11,
+    letterSpacing: "0.14em",
+    fontWeight: 700,
+    color: "#ff5f66",
+  },
+  mockRecDot: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    background: "#ff5f66",
+    boxShadow: "0 0 0 3px rgba(255,95,102,0.25)",
+    animation: "pulse 1.6s ease-in-out infinite",
+  },
+  mockTime: {
+    fontFamily: "var(--font-mono)",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.55)",
+    letterSpacing: "0.06em",
+  },
+  mockIcons: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.4)",
+    letterSpacing: "0.2em",
+  },
   mockGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: 12,
-    background:
-      "radial-gradient(ellipse 80% 80% at 50% 20%, rgba(79, 70, 229,0.14) 0%, transparent 60%), var(--bg-soft)",
-    borderRadius: 20,
-    padding: 20,
-    border: "1px solid var(--border)",
+    padding: 14,
   },
   mockTile: {
     position: "relative",
     aspectRatio: "16/10",
-    borderRadius: 12,
-    background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
+    borderRadius: "var(--radius-lg)",
+    background: "linear-gradient(135deg, #1b2233 0%, #121826 100%)",
+    border: "1px solid rgba(255,255,255,0.06)",
     overflow: "hidden",
     display: "flex",
     alignItems: "center",
@@ -1025,13 +1126,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 56,
-    height: 56,
+    width: 54,
+    height: 54,
     borderRadius: "50%",
     color: "#fff",
     fontSize: 22,
     fontWeight: 700,
-    boxShadow: "0 6px 18px rgba(0,0,0,0.35)",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
   },
   mockName: {
     position: "absolute",
@@ -1039,65 +1140,109 @@ const styles: Record<string, React.CSSProperties> = {
     left: 8,
     fontSize: 11,
     fontWeight: 600,
-    color: "#fff",
-    background: "rgba(0,0,0,0.5)",
-    padding: "3px 8px",
+    color: "rgba(255,255,255,0.92)",
+    background: "rgba(10,12,18,0.55)",
+    WebkitBackdropFilter: "blur(6px)",
+    backdropFilter: "blur(6px)",
+    padding: "3px 9px",
     borderRadius: 999,
+    letterSpacing: "0.02em",
+  },
+  featureBand: {
+    background: "var(--bg-soft)",
+    borderRadius: "var(--radius-2xl)",
+    padding: "56px 40px 48px",
+    border: "1px solid var(--border-soft)",
+  },
+  featureHeader: {
+    textAlign: "center",
+    marginBottom: 36,
+  },
+  featureEyebrow: {
+    display: "inline-block",
+    fontFamily: "var(--font-mono)",
+    fontSize: 12,
+    letterSpacing: "0.14em",
+    textTransform: "uppercase",
+    fontWeight: 700,
+    color: "var(--accent)",
+    marginBottom: 12,
+  },
+  featureHeading: {
+    fontSize: 32,
+    fontWeight: 800,
+    color: "var(--text)",
+    letterSpacing: "-0.03em",
+    margin: 0,
+    fontFamily: "var(--font-display)",
+  },
+  featureIntro: {
+    fontSize: 15,
+    color: "var(--text-muted)",
+    margin: "10px auto 0",
+    maxWidth: 460,
   },
   features: {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
-    gap: 16,
+    gap: 18,
   },
   featureCard: {
     background: "var(--bg-card)",
     border: "1px solid var(--border)",
     borderRadius: "var(--radius-xl)",
-    padding: 20,
-    boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+    padding: 26,
+    boxShadow: "var(--elev-ring)",
+    display: "flex",
+    flexDirection: "column",
+    textAlign: "left",
   },
   featureIcon: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    background: "rgba(79, 70, 229,0.2)",
-    color: "var(--accent-dark)",
-    marginBottom: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+    color: "var(--accent)",
+    marginBottom: 16,
   },
   featureTitle: {
     margin: 0,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: 700,
     color: "var(--text)",
-    marginBottom: 4,
+    marginBottom: 6,
+    fontFamily: "var(--font-display)",
+    letterSpacing: "-0.01em",
   },
   featureDesc: {
     margin: 0,
-    fontSize: 13,
+    fontSize: 13.5,
     color: "var(--text-muted)",
-    lineHeight: 1.5,
+    lineHeight: 1.6,
   },
   tableCard: {
     background: "var(--bg-card)",
     border: "1px solid var(--border)",
     borderRadius: "var(--radius-xl)",
-    padding: 20,
-    boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+    padding: 26,
+    boxShadow: "var(--elev-ring)",
   },
   cardHeader: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 16,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: 700,
+    fontSize: 20,
+    fontWeight: 800,
     color: "var(--text)",
     margin: 0,
+    fontFamily: "var(--font-display)",
+    letterSpacing: "-0.02em",
   },
   cardMore: {
     padding: "6px 14px",
@@ -1105,8 +1250,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     borderRadius: 999,
     border: "1px solid var(--border)",
-    background: "var(--bg-soft)",
-    color: "var(--text-muted)",
+    background: "transparent",
+    color: "var(--accent)",
     cursor: "pointer",
   },
   table: {
@@ -1119,25 +1264,29 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: "var(--text-dim)",
     textTransform: "uppercase",
-    letterSpacing: "0.04em",
-    padding: "8px 10px",
+    letterSpacing: "0.06em",
+    padding: "10px 12px",
     borderBottom: "1px solid var(--border)",
+    whiteSpace: "nowrap",
   },
   tr: {
     borderBottom: "1px solid var(--border-soft)",
   },
   td: {
-    padding: "10px",
-    fontSize: 13,
+    padding: "12px",
+    fontSize: 14,
     color: "var(--text)",
+    verticalAlign: "middle",
   },
   codePill: {
-    padding: "2px 8px",
+    padding: "3px 10px",
     borderRadius: 6,
-    background: "var(--bg-soft)",
-    fontFamily: "monospace",
+    background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+    color: "var(--accent)",
+    fontFamily: "var(--font-mono)",
     fontWeight: 700,
     fontSize: 12,
+    letterSpacing: "0.06em",
   },
   tdMuted: { color: "var(--text-dim)" },
   invitedChips: {
@@ -1149,8 +1298,8 @@ const styles: Record<string, React.CSSProperties> = {
   invitedChip: {
     padding: "2px 8px",
     borderRadius: 999,
-    background: "rgba(79, 70, 229,0.18)",
-    color: "var(--accent-dark)",
+    background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+    color: "var(--accent)",
     fontSize: 11,
     fontWeight: 600,
     whiteSpace: "nowrap",
@@ -1159,36 +1308,46 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: 8,
-    padding: "24px 0",
+    gap: 12,
+    padding: "44px 24px",
     borderRadius: "var(--radius-lg)",
-    background: "var(--bg-soft)",
+    background: "color-mix(in srgb, var(--bg-soft) 60%, transparent)",
+    border: "1px dashed var(--border)",
     textAlign: "center",
   },
-  emptyIcon: { fontSize: 24 },
-  emptyText: { fontSize: 13, color: "var(--text-dim)", margin: 0 },
+  emptyIcon: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 46,
+    height: 46,
+    borderRadius: "50%",
+    background: "var(--bg-hover)",
+    color: "var(--text-dim)",
+  },
+  emptyText: { fontSize: 14, color: "var(--text-dim)", margin: 0 },
   view: {
     display: "flex",
     flexDirection: "column",
-    gap: 20,
+    gap: 24,
   },
   viewCard: {
     background: "var(--bg-card)",
     border: "1px solid var(--border)",
     borderRadius: "var(--radius-xl)",
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+    padding: 28,
+    boxShadow: "var(--elev-ring)",
     display: "flex",
     flexDirection: "column",
-    gap: 14,
+    gap: 16,
   },
-  viewTitle: { fontSize: 20, fontWeight: 700, color: "var(--text)", margin: 0 },
+  viewTitle: { fontSize: 22, fontWeight: 800, color: "var(--text)", margin: 0, fontFamily: "var(--font-display)", letterSpacing: "-0.02em" },
   viewDesc: { fontSize: 14, color: "var(--text-muted)", margin: 0 },
   plainInput: {
     flex: 1,
-    padding: "11px 14px",
+    padding: "12px 16px",
     fontSize: 14,
-    borderRadius: 10,
+    borderRadius: 999,
     border: "1px solid var(--border)",
     background: "var(--bg-input)",
     color: "var(--text)",
@@ -1198,7 +1357,7 @@ const styles: Record<string, React.CSSProperties> = {
   schedPickRow: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: 14,
+    gap: 16,
   },
   schedPickCol: {
     display: "flex",
@@ -1211,26 +1370,26 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: "var(--text-muted)",
     textTransform: "uppercase",
-    letterSpacing: "0.04em",
+    letterSpacing: "0.06em",
   },
   schedSummary: {
     display: "flex",
     alignItems: "center",
     gap: 8,
-    padding: "10px 14px",
-    borderRadius: 10,
-    background: "rgba(79, 70, 229,0.12)",
-    border: "1px solid rgba(79, 70, 229,0.35)",
-    color: "var(--accent-dark)",
+    padding: "10px 16px",
+    borderRadius: 999,
+    background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--accent) 26%, transparent)",
+    color: "var(--accent)",
     fontSize: 13,
     fontWeight: 600,
   },
   schedSummaryIcon: { flexShrink: 0 },
   emailNote: {
-    padding: "10px 14px",
+    padding: "10px 16px",
     fontSize: 13,
     fontWeight: 500,
-    borderRadius: 10,
+    borderRadius: 999,
     lineHeight: 1.5,
   },
   authPrompt: {
@@ -1243,20 +1402,20 @@ const styles: Record<string, React.CSSProperties> = {
   authPromptBtn: {
     padding: "12px 28px",
     fontSize: 14,
-    fontWeight: 700,
-    borderRadius: 12,
+    fontWeight: 600,
+    borderRadius: 999,
     border: "none",
     background: "var(--accent)",
     color: "var(--accent-ink)",
     cursor: "pointer",
   },
   cancelBtn: {
-    padding: "4px 10px",
+    padding: "5px 12px",
     fontSize: 12,
     fontWeight: 600,
-    borderRadius: 8,
-    border: "1px solid var(--border)",
-    background: "var(--bg-soft)",
+    borderRadius: 999,
+    border: "1px solid color-mix(in srgb, var(--danger) 30%, transparent)",
+    background: "color-mix(in srgb, var(--danger) 8%, transparent)",
     color: "var(--danger)",
     cursor: "pointer",
   },
@@ -1270,40 +1429,43 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "12px 20px",
     fontSize: 14,
     fontWeight: 600,
-    borderRadius: 12,
+    borderRadius: 999,
     background: "var(--text)",
     color: "var(--bg)",
-    boxShadow: "0 12px 32px rgba(15,23,42,0.2)",
+    boxShadow: "var(--elev-floating)",
     zIndex: 200,
     animation: "toastIn 0.2s ease",
   },
   authOverlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(15,23,42,0.5)",
+    background: "rgba(10,13,20,0.6)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1000,
-    backdropFilter: "blur(3px)",
+    WebkitBackdropFilter: "blur(8px)",
+    backdropFilter: "blur(8px)",
   },
   authModal: {
     position: "relative",
     width: 400,
     maxWidth: "92vw",
-    background: "var(--bg-card)",
+    background: "color-mix(in srgb, var(--bg-card) 82%, transparent)",
+    WebkitBackdropFilter: "blur(24px) saturate(160%)",
+    backdropFilter: "blur(24px) saturate(160%)",
     border: "1px solid var(--border)",
-    borderRadius: 18,
-    padding: "30px 34px",
-    boxShadow: "0 25px 60px rgba(15,23,42,0.25)",
+    borderRadius: "var(--radius-2xl)",
+    padding: "32px 36px",
+    boxShadow: "var(--elev-floating)",
     display: "flex",
     flexDirection: "column",
     gap: 10,
   },
   authClose: {
     position: "absolute",
-    top: 14,
-    right: 14,
+    top: 16,
+    right: 16,
     width: 30,
     height: 30,
     display: "flex",
@@ -1326,43 +1488,41 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    background: "var(--accent)",
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)",
   },
-  authBrandText: { fontSize: 15, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em" },
-  authTitle: { fontSize: 24, fontWeight: 800, color: "var(--text)", margin: 0, textAlign: "center", marginTop: 6 },
-  authSub: { fontSize: 13, color: "var(--text-muted)", margin: 0, textAlign: "center", marginBottom: 8 },
+  authBrandText: { fontSize: 16, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em", fontFamily: "var(--font-display)" },
+  authTitle: { fontSize: 26, fontWeight: 800, color: "var(--text)", margin: 0, textAlign: "center", marginTop: 8, fontFamily: "var(--font-display)", letterSpacing: "-0.03em" },
+  authSub: { fontSize: 13, color: "var(--text-muted)", margin: 0, textAlign: "center", marginBottom: 10 },
   githubBtn: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    padding: "12px 16px",
+    padding: "13px 16px",
     fontSize: 14,
-    fontWeight: 700,
-    borderRadius: 12,
+    fontWeight: 600,
+    borderRadius: 999,
     border: "1px solid var(--border)",
     background: "var(--bg-soft)",
     color: "var(--text)",
     cursor: "pointer",
-    transition: "background 0.15s",
   },
   emailBtn: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    padding: "12px 16px",
+    padding: "13px 16px",
     fontSize: 14,
-    fontWeight: 700,
-    borderRadius: 12,
+    fontWeight: 600,
+    borderRadius: 999,
     border: "1px solid var(--border)",
     background: "var(--bg-soft)",
     color: "var(--text)",
     cursor: "pointer",
-    transition: "background 0.15s",
   },
   authBack: {
     alignSelf: "flex-start",
@@ -1371,7 +1531,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     border: "none",
     background: "transparent",
-    color: "var(--accent-dark)",
+    color: "var(--accent)",
     cursor: "pointer",
     marginBottom: 2,
   },
@@ -1397,9 +1557,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   authInput: {
     width: "100%",
-    padding: "12px 12px 12px 38px",
+    padding: "13px 12px 13px 38px",
     fontSize: 14,
-    borderRadius: 10,
+    borderRadius: 999,
     border: "1px solid var(--border)",
     background: "var(--bg-input)",
     color: "var(--text)",
@@ -1415,25 +1575,25 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     border: "none",
     background: "transparent",
-    color: "var(--accent-dark)",
+    color: "var(--accent)",
     cursor: "pointer",
   },
   authError: {
-    padding: "8px 12px",
+    padding: "9px 14px",
     fontSize: 13,
     fontWeight: 500,
     color: "var(--danger)",
-    background: "rgba(239,68,68,0.08)",
-    borderRadius: 8,
+    background: "color-mix(in srgb, var(--danger) 8%, transparent)",
+    borderRadius: 999,
   },
   authSubmit: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "12px 20px",
+    padding: "13px 20px",
     fontSize: 14,
-    fontWeight: 700,
-    borderRadius: 10,
+    fontWeight: 600,
+    borderRadius: 999,
     border: "none",
     background: "var(--accent)",
     color: "var(--accent-ink)",
@@ -1452,7 +1612,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     border: "none",
     background: "transparent",
-    color: "var(--accent-dark)",
+    color: "var(--accent)",
     cursor: "pointer",
   },
 };

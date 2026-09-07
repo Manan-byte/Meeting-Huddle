@@ -3,9 +3,11 @@ import { describe, it, expect } from "vitest";
 import { App } from "../App";
 
 describe("App", () => {
-  it("renders Huddle heading", () => {
+  it("renders Huddle brand", () => {
     render(<App />);
-    expect(screen.getByText("Huddle")).toBeInTheDocument();
+    // The brand appears in the top nav and the footer mark; assert that at
+    // least one is present rather than a single ambiguous text match.
+    expect(screen.getAllByText("Huddle").length).toBeGreaterThan(0);
   });
 
   it("renders New meeting button", () => {

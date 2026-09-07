@@ -12,6 +12,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { ChatMessage } from "@meet-app/shared";
 import { Send } from "lucide-react";
+import "../styles/ChatPanel.css";
 
 interface ChatPanelProps {
   /** Array of chat messages to display. */
@@ -55,7 +56,6 @@ export function ChatPanel({ messages, onSend, currentUserId }: ChatPanelProps) {
   return (
     <div style={styles.container}>
       <header style={styles.header}>
-        <span style={styles.headerAccent} aria-hidden="true" />
         <h3 style={styles.heading}>Chat</h3>
         <span style={styles.count}>{messages.length}</span>
       </header>
@@ -105,6 +105,7 @@ export function ChatPanel({ messages, onSend, currentUserId }: ChatPanelProps) {
       {/* Input row */}
       <div style={styles.inputRow}>
         <input
+          className="chat-input"
           style={styles.input}
           type="text"
           placeholder="Type a message..."
@@ -113,6 +114,7 @@ export function ChatPanel({ messages, onSend, currentUserId }: ChatPanelProps) {
           onKeyDown={handleKeyDown}
         />
         <button
+          className="chat-send"
           style={{
             ...styles.sendButton,
             opacity: text.trim() ? 1 : 0.5,
@@ -148,13 +150,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: "1px solid var(--border)",
     flexShrink: 0,
   },
-  headerAccent: {
-    width: 3,
-    height: 16,
-    borderRadius: 2,
-    background: "var(--accent)",
-    flexShrink: 0,
-  },
   count: {
     marginLeft: "auto",
     fontSize: 12,
@@ -175,7 +170,7 @@ const styles: Record<string, React.CSSProperties> = {
   message: {
     alignSelf: "flex-start",
     background: "var(--bg-soft)",
-    borderRadius: "12px",
+    borderRadius: "var(--radius-2xl)",
     padding: "8px 12px",
     maxWidth: "85%",
     border: "1px solid var(--border)",
@@ -202,7 +197,7 @@ const styles: Record<string, React.CSSProperties> = {
   sender: {
     fontWeight: 700,
     fontSize: 13,
-    color: "var(--accent-dark)",
+    color: "var(--accent)",
   },
   time: {
     fontSize: 11,
@@ -225,14 +220,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   input: {
     flex: 1,
-    padding: "10px 14px",
+    padding: "10px 16px",
     fontSize: 14,
-    borderRadius: 999,
+    borderRadius: "var(--radius-pill)",
     border: "1px solid var(--border)",
     background: "var(--bg-soft)",
     color: "var(--text)",
     outline: "none",
-    transition: "border-color 0.2s, box-shadow 0.2s",
+    transition:
+      "border-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard)",
   },
   sendButton: {
     display: "flex",
@@ -246,6 +242,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--accent-ink)",
     cursor: "pointer",
     flexShrink: 0,
-    transition: "transform 0.15s, box-shadow 0.2s",
+    transition:
+      "transform var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard)",
   },
 };

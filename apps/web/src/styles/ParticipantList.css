@@ -1,0 +1,7 @@
+/* ════════════════════════════════════════════════════════════════
+   ParticipantList.css — row hover states for the participants panel
+   ════════════════════════════════════════════════════════════════ */
+
+.pl-row:hover {
+  background: var(--bg-soft);
+}

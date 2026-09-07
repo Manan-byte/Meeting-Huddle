@@ -32,6 +32,7 @@ import {
   type CaptionSegment,
   type WaitingUser,
 } from "@meet-app/shared";
+import { Video, Clock } from "lucide-react";
 import { useLiveKit } from "../hooks/useLiveKit";
 import { usePushToTalk } from "../hooks/usePushToTalk";
 import { useSpeakingLevel, SPEAKING_THRESHOLD } from "../hooks/useSpeakingLevel";
@@ -562,9 +563,11 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     return (
       <div style={styles.endedContainer}>
         <div style={styles.endedContent}>
-          <h2>Meeting Has Ended</h2>
-          <p>The host has ended this meeting.</p>
-          <button style={styles.endedButton} onClick={onLeaveRoom}>
+          <span style={styles.endedMark}><Video size={18} color="var(--accent-ink)" /></span>
+          <span style={styles.endedEyebrow}>Huddle</span>
+          <h2 style={styles.endedTitle}>Meeting Has Ended</h2>
+          <p style={styles.endedSub}>The host has ended this meeting. Thanks for joining.</p>
+          <button className="dash-primary" style={styles.endedButton} onClick={onLeaveRoom}>
             Return to Lobby
           </button>
         </div>
@@ -577,8 +580,10 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     return (
       <div style={styles.endedContainer}>
         <div style={styles.endedContent}>
-          <h2>Waiting Room</h2>
-          <p>Please wait for the host to admit you.</p>
+          <span style={styles.endedMark}><Clock size={18} color="var(--accent-ink)" /></span>
+          <span style={styles.endedEyebrow}>Huddle</span>
+          <h2 style={styles.endedTitle}>Waiting Room</h2>
+          <p style={styles.endedSub}>Please wait for the host to admit you.</p>
         </div>
       </div>
     );
@@ -609,8 +614,9 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
             {meetingStartedAt > 0 && <MeetingTimer startedAt={meetingStartedAt} />}
           </div>
           <div style={styles.headerRight}>
-            <h2 style={styles.roomCode}>{room?.code ?? "â€”"}</h2>
+            <span style={styles.roomCode}>{room?.code ?? "â€”"}</span>
             <span style={styles.participantCount}>
+              <span style={styles.liveDot} />
               {participants.length} participant{participants.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -785,7 +791,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     height: "100vh",
     background:
-      "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(79, 70, 229,0.12) 0%, transparent 60%), var(--bg)",
+      "radial-gradient(ellipse 80% 60% at 50% -10%, color-mix(in srgb, var(--accent) 14%, transparent) 0%, transparent 60%), var(--bg)",
     color: "var(--text)",
   },
   body: {
@@ -808,8 +814,9 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 16,
     padding: "12px 24px",
     borderBottom: "1px solid var(--border)",
-    background: "rgba(255,255,255,0.75)",
-    backdropFilter: "blur(8px)",
+    background: "color-mix(in srgb, var(--bg-raised) 72%, transparent)",
+    WebkitBackdropFilter: "blur(18px) saturate(160%)",
+    backdropFilter: "blur(18px) saturate(160%)",
     flexShrink: 0,
   },
   headerLeft: {
@@ -825,21 +832,37 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   roomCode: {
+    display: "inline-flex",
+    alignItems: "center",
+    fontFamily: "var(--font-mono)",
     fontSize: 13,
+    letterSpacing: "0.12em",
     fontWeight: 700,
     color: "var(--accent)",
     margin: 0,
-    padding: "4px 12px",
+    padding: "5px 14px",
     borderRadius: 999,
-    background: "rgba(79, 70, 229,0.12)",
-    letterSpacing: "0.08em",
+    background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--accent) 24%, transparent)",
   },
   participantCount: {
     fontSize: 13,
-    color: "var(--text-secondary)",
-    display: "flex",
+    fontWeight: 500,
+    color: "var(--text-muted)",
+    display: "inline-flex",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
+    padding: "6px 14px",
+    borderRadius: 999,
+    background: "color-mix(in srgb, var(--bg-soft) 80%, transparent)",
+    border: "1px solid var(--border)",
+  },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: "50%",
+    background: "var(--success)",
+    boxShadow: "0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent)",
   },
   contentArea: {
     flex: 1,
@@ -853,7 +876,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     width: 320,
     borderLeft: "1px solid var(--border)",
-    background: "var(--bg-raised)",
+    background: "color-mix(in srgb, var(--bg-raised) 92%, transparent)",
     overflow: "hidden",
     flexShrink: 0,
   },
@@ -863,15 +886,51 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     height: "100vh",
     background:
-      "radial-gradient(ellipse 60% 50% at 50% 30%, rgba(79, 70, 229,0.1) 0%, transparent 60%), var(--bg)",
+      "radial-gradient(ellipse 60% 50% at 50% 30%, color-mix(in srgb, var(--accent) 14%, transparent) 0%, transparent 60%), var(--bg)",
   },
   endedContent: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
     textAlign: "center",
     color: "var(--text)",
+    padding: "0 24px",
+  },
+  endedMark: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)",
+    boxShadow: "0 12px 32px color-mix(in srgb, var(--accent) 35%, transparent)",
+    marginBottom: 18,
+  },
+  endedEyebrow: {
+    fontFamily: "var(--font-display)",
+    fontSize: 15,
+    fontWeight: 800,
+    letterSpacing: "-0.01em",
+    color: "var(--text-muted)",
+    marginBottom: 10,
+  },
+  endedTitle: {
+    fontSize: 40,
+    fontWeight: 800,
+    letterSpacing: "-0.03em",
+    color: "var(--text)",
+    margin: 0,
+    fontFamily: "var(--font-display)",
+  },
+  endedSub: {
+    fontSize: 15,
+    color: "var(--text-muted)",
+    marginTop: 10,
   },
   endedButton: {
-    marginTop: 20,
-    padding: "12px 28px",
+    marginTop: 28,
+    padding: "13px 30px",
     fontSize: 15,
     fontWeight: 600,
     borderRadius: 999,
@@ -879,7 +938,6 @@ const styles: Record<string, React.CSSProperties> = {
     background: "var(--accent)",
     color: "var(--accent-ink)",
     cursor: "pointer",
-    transition: "transform 0.15s, box-shadow 0.2s",
   },
   endMeetingBtn: {
     position: "fixed",
@@ -894,8 +952,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#fff",
     cursor: "pointer",
     zIndex: 100,
-    boxShadow: "0 8px 24px rgba(234,67,53,0.3)",
-    transition: "transform 0.15s, box-shadow 0.2s",
+    boxShadow: "0 8px 24px color-mix(in srgb, var(--danger) 35%, transparent)",
   },
   chatToast: {
     position: "absolute",
@@ -908,9 +965,11 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 420,
     padding: "10px 16px",
     borderRadius: 999,
-    background: "var(--bg-card)",
+    background: "color-mix(in srgb, var(--bg-card) 80%, transparent)",
+    WebkitBackdropFilter: "blur(16px) saturate(160%)",
+    backdropFilter: "blur(16px) saturate(160%)",
     border: "1px solid var(--border)",
-    boxShadow: "0 8px 24px rgba(15,23,42,0.18)",
+    boxShadow: "var(--elev-raised)",
     cursor: "pointer",
     zIndex: 80,
     animation: "toastIn 0.25s ease",

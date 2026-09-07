@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Mic, MicOff, Video, VideoOff, X, ChevronDown, Video as VideoIcon, Volume2, VolumeX, Sparkles } from "lucide-react";
 import { useSpeakingLevel } from "../hooks/useSpeakingLevel";
+import "../styles/PreJoinScreen.css";
 
 interface PreJoinScreenProps {
   /** The user's display name. */
@@ -196,7 +197,7 @@ export function PreJoinScreen({
             </span>
             <span style={styles.brandText}>Huddle</span>
           </span>
-          <button style={styles.closeBtn} onClick={onCancel} title="Close">
+          <button className="pj-icon" style={styles.closeBtn} onClick={onCancel} title="Close">
             <X size={18} />
           </button>
         </div>
@@ -242,10 +243,20 @@ export function PreJoinScreen({
 
           {/* Gradient footer with center controls */}
           <div style={styles.previewFooter}>
-            <button style={styles.toggleBtn} onClick={toggleMic} title={muted ? "Unmute" : "Mute"}>
+            <button
+              className="pj-toggle"
+              style={{ ...styles.toggleBtn, background: muted ? "var(--danger)" : "rgba(255,255,255,0.92)", color: muted ? "#fff" : "#0f172a" }}
+              onClick={toggleMic}
+              title={muted ? "Unmute" : "Mute"}
+            >
               {muted ? <MicOff size={20} /> : <Mic size={20} />}
             </button>
-            <button style={styles.toggleBtn} onClick={toggleVideo} title={videoOff ? "Turn on camera" : "Turn off camera"}>
+            <button
+              className="pj-toggle"
+              style={{ ...styles.toggleBtn, background: videoOff ? "var(--danger)" : "rgba(255,255,255,0.92)", color: videoOff ? "#fff" : "#0f172a" }}
+              onClick={toggleVideo}
+              title={videoOff ? "Turn on camera" : "Turn off camera"}
+            >
               {videoOff ? <VideoOff size={20} /> : <Video size={20} />}
             </button>
           </div>
@@ -291,7 +302,7 @@ export function PreJoinScreen({
                 />
               ))}
             </div>
-            <button style={styles.testBtn} onClick={playTestTone}>
+            <button className="pj-test" style={styles.testBtn} onClick={playTestTone}>
               {testingAudio ? "Playing..." : "Test speaker"}
             </button>
           </div>
@@ -312,6 +323,7 @@ export function PreJoinScreen({
               return (
                 <button
                   key={opt.label}
+                  className="pj-bgchip"
                   style={{
                     ...styles.bgChip,
                     border: active ? "2px solid var(--accent)" : "2px solid var(--border)",
@@ -359,10 +371,10 @@ export function PreJoinScreen({
             {isCreating ? "You are creating this meeting" : `Joining as ${displayName}`}
           </p>
           <div style={styles.actions}>
-            <button style={styles.cancelBtn} onClick={onCancel}>
+            <button className="pj-ghost" style={styles.cancelBtn} onClick={onCancel}>
               Cancel
             </button>
-            <button style={styles.joinBtn} onClick={handleJoin}>
+            <button className="pj-primary" style={styles.joinBtn} onClick={handleJoin}>
               Join now
             </button>
           </div>
@@ -416,23 +428,23 @@ const styles: Record<string, React.CSSProperties> = {
   overlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(15,23,42,0.45)",
+    background: "rgba(8,11,18,0.55)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1100,
-    backdropFilter: "blur(4px)",
+    backdropFilter: "blur(8px)",
     padding: 24,
   },
   panel: {
     display: "flex",
     flexDirection: "column",
-    background: "var(--bg-card)",
-    borderRadius: 24,
+    background: "color-mix(in srgb, var(--bg-card) 92%, transparent)",
+    borderRadius: "var(--radius-2xl)",
     width: 460,
     maxWidth: "100%",
     border: "1px solid var(--border)",
-    boxShadow: "0 30px 70px rgba(15,23,42,0.25)",
+    boxShadow: "var(--elev-floating)",
     overflow: "hidden",
     padding: 0,
   },
@@ -454,7 +466,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 26,
     height: 26,
     borderRadius: 8,
-    background: "rgba(79, 70, 229,0.25)",
+    background: "color-mix(in srgb, var(--accent) 22%, transparent)",
   },
   brandText: {
     fontSize: 16,
@@ -467,10 +479,11 @@ const styles: Record<string, React.CSSProperties> = {
     border: "none",
     color: "var(--text-muted)",
     cursor: "pointer",
-    padding: 6,
+    padding: 7,
     borderRadius: "50%",
     display: "flex",
-    transition: "background 0.15s",
+    transition:
+      "background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard), transform var(--motion-fast) var(--ease-standard)",
   },
   previewWrap: {
     position: "relative",
@@ -479,7 +492,8 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: "hidden",
     background: "var(--bg-raised)",
     aspectRatio: "16/9",
-    boxShadow: "inset 0 0 0 1px var(--border)",
+    boxShadow: "var(--elev-raised)",
+    border: "1px solid var(--border)",
   },
   preview: {
     width: "100%",
@@ -496,17 +510,17 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     gap: 6,
     background:
-      "linear-gradient(135deg, #eef7e2 0%, #d9f2bd 100%)",
+      "radial-gradient(ellipse 80% 70% at 50% 30%, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 70%), var(--bg-raised)",
   },
   previewInitials: {
     fontSize: 56,
-    fontWeight: 700,
-    color: "var(--accent-dark)",
+    fontWeight: 800,
+    color: "var(--text)",
+    letterSpacing: "-0.03em",
   },
   previewFallbackLabel: {
     fontSize: 12,
-    color: "var(--accent-dark)",
-    opacity: 0.7,
+    color: "var(--text-muted)",
   },
   previewName: {
     position: "absolute",
@@ -542,14 +556,15 @@ const styles: Record<string, React.CSSProperties> = {
     height: 44,
     borderRadius: "50%",
     border: "none",
-    background: "rgba(255,255,255,0.95)",
+    background: "rgba(255,255,255,0.92)",
     color: "#0f172a",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 4px 12px rgba(15,23,42,0.25)",
-    transition: "transform 0.12s, background 0.15s",
+    boxShadow: "0 4px 12px rgba(8,11,18,0.3)",
+    transition:
+      "transform var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard)",
   },
   controls: {
     padding: "12px 20px 0",
@@ -610,6 +625,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--text)",
     cursor: "pointer",
     flexShrink: 0,
+    transition:
+      "border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard)",
   },
   bgLabelRow: {
     display: "flex",
@@ -717,24 +734,26 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "12px 0",
     fontSize: 14,
     fontWeight: 600,
-    borderRadius: 999,
+    borderRadius: "var(--radius-pill)",
     border: "1px solid var(--border)",
     background: "var(--bg-soft)",
     color: "var(--text)",
     cursor: "pointer",
-    transition: "background 0.15s",
+    transition:
+      "background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard)",
   },
   joinBtn: {
     flex: 2,
     padding: "12px 0",
     fontSize: 14,
     fontWeight: 700,
-    borderRadius: 999,
+    borderRadius: "var(--radius-pill)",
     border: "none",
     background: "var(--accent)",
     color: "var(--accent-ink)",
     cursor: "pointer",
-    boxShadow: "0 6px 18px rgba(79,70,229,0.25)",
-    transition: "background 0.15s, transform 0.1s",
+    boxShadow: "0 6px 18px color-mix(in srgb, var(--accent) 30%, transparent)",
+    transition:
+      "background var(--motion-fast) var(--ease-standard), transform var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard)",
   },
 };

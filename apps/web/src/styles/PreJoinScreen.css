@@ -1,0 +1,48 @@
+/* ════════════════════════════════════════════════════════════════
+   PreJoinScreen.css — hover / active states for the pre-call lobby
+   ════════════════════════════════════════════════════════════════ */
+
+/* Close / icon button */
+.pj-icon:not(:disabled):hover {
+  background: var(--bg-soft);
+  color: var(--text);
+  transform: scale(1.08);
+}
+.pj-icon:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+/* Toggle buttons on preview (mic / camera) */
+.pj-toggle:not(:disabled):hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 16px rgba(8,11,18,0.35);
+}
+.pj-toggle:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+/* Test speaker button */
+.pj-test:not(:disabled):hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-soft));
+}
+
+/* Background chip */
+.pj-bgchip:hover {
+  border-color: var(--accent) !important;
+}
+
+/* Ghost / cancel button */
+.pj-ghost:not(:disabled):hover {
+  background: var(--bg-raised);
+  border-color: var(--border-strong, var(--border));
+}
+
+/* Primary / join button */
+.pj-primary:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 38%, transparent);
+}
+.pj-primary:not(:disabled):active {
+  transform: translateY(0);
+}

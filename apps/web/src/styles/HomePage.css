@@ -1,54 +1,100 @@
 /* ================================================================
-   HomePage â€” landing + dashboard styles
-   Uses: .dash-* (cards/buttons), .hp-* (hero/illustration)
+   HomePage — landing + dashboard (redesigned editorial system)
+   Uses: .dash-*, .hp-* (hero / feature / state layers)
    ================================================================ */
 
-/* Homepage responsive */
-@media (max-width: 768px) {
-  .hp-hero { display: none !important; }
-  .hp-main { flex-direction: column; gap: 24px !important; padding: 16px !important; }
-  .hp-card { width: 100% !important; }
-}
+/* ── Buttons & interactive state pairs ─────────────────────────── */
 
-/* Button disabled state */
-.hp-btn:disabled { cursor: not-allowed; opacity: 0.5; transform: none; box-shadow: none; }
-
-/* Button hover glow */
-.hp-btn:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 0 20px rgba(79, 70, 229, 0.25); }
-.hp-btn:active:not(:disabled) { transform: scale(0.98); }
-
-/* Nav icon hover */
-.hp-nav-btn:hover { background: var(--bg-hover); }
-
-/* Input focus glow */
-.hp-input:focus { border-color: var(--border-focus) !important; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15); }
-
-/* Hero gradient animation */
-@keyframes heroGradientShift {
-  0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(5deg) scale(1.05); }
-  100% { transform: rotate(0deg) scale(1); }
-}
-.hp-illust-circle1 { animation: heroGradientShift 6s ease-in-out infinite; }
-.hp-illust-circle2 { animation: heroGradientShift 8s ease-in-out infinite reverse; }
-.hp-illust-rect { animation: heroGradientShift 10s ease-in-out infinite; }
-
-/* Dashboard card hover lift */
-.dash-card { transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
-.dash-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
-  border-color: rgba(79, 70, 229, 0.35);
-}
-
-/* Dashboard primary button */
+/* Primary pill (New meeting / Schedule / Sign in submit) */
 .dash-primary:hover:not(:disabled) {
   background: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.32);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 35%, transparent);
 }
-.dash-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.dash-primary:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+.dash-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 
-/* Stat tile hover */
-.dash-stat { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-.dash-stat:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10); }
+/* Ghost / secondary pill (Join, Sign out, GitHub, email) */
+.hp-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-soft));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--accent);
+}
+.hp-ghost:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+.hp-ghost:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* Nav pill links */
+.hp-nav-link:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--text); }
+.hp-nav-link:active { transform: scale(0.98); }
+
+/* Nav Sign-in pill */
+.hp-signin:hover { background: var(--bg-hover); box-shadow: var(--elev-raised); }
+
+/* Feature cards — hover lift with soft elevation */
+.hp-feature {
+  transition: transform var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard);
+}
+.hp-feature:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--elev-raised);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+/* Hero call card — subtle press feedback on inner actions */
+.hp-hero-card { transition: box-shadow var(--motion-base) var(--ease-standard); }
+.hp-hero-card:focus-within { box-shadow: var(--elev-floating); }
+
+/* Table rows — hover tint */
+.hp-row { transition: background var(--motion-fast) var(--ease-standard); }
+.hp-row:hover td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+
+/* ── Footer — dark chapter (adapts to both themes) ─────────────── */
+.hp-footer {
+  margin-top: 48px;
+  padding: 44px 24px 48px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: #0b0e14;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .hp-footer {
+  background: #05070c;
+  border-top: 1px solid var(--border-soft);
+}
+.hp-footer-mark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: #f5f7fa;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.hp-footer-mark::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #7a82ff, #5658f0);
+}
+.hp-footer-line {
+  font-size: 13px;
+  color: #8b93a7;
+  letter-spacing: 0.01em;
+}
+.hp-footer-line span { color: #7a82ff; font-weight: 600; }
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .hp-hero { flex-direction: column !important; gap: 44px !important; }
+  .hp-static { display: none; }
+}
+@media (max-width: 640px) {
+  .hp-feature-grid { grid-template-columns: 1fr !important; }
+}
