@@ -28,3 +28,6 @@ Thumbs.db
 
 # ForgeGuard local cache
 .forgeguard/
+
+# Turbo build cache
+.turbo/
