@@ -16,6 +16,7 @@
 import { HuddleDO } from "./huddleDO";
 import { isLiveKitConfigured, issueLiveKitToken } from "./livekit";
 import { handleGithubCallback } from "./githubOAuth";
+import { handleGoogleCallback } from "./googleOAuth";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -26,6 +27,8 @@ export interface Env {
   LIVEKIT_API_SECRET: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
   CLIENT_URL: string;
 }
 
@@ -65,6 +68,9 @@ export default {
     }
     if (url.pathname === "/auth/github/callback") {
       return handleGithubCallback(request, env);
+    }
+    if (url.pathname === "/auth/google/callback") {
+      return handleGoogleCallback(request, env);
     }
 
     // WebSocket → the single global Durable Object.

@@ -15,6 +15,7 @@ export interface StoredUser {
   passwordHash: string;
   salt: string;
   githubId?: string;
+  googleId?: string;
   createdAt: number;
 }
 
@@ -67,7 +68,7 @@ export async function ensureSchema(db: D1Database): Promise<void> {
     db.prepare(`CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL,
       password_hash TEXT NOT NULL, salt TEXT NOT NULL,
-      github_id TEXT, created_at INTEGER NOT NULL
+      github_id TEXT, google_id TEXT, created_at INTEGER NOT NULL
     )`),
     db.prepare(`CREATE TABLE IF NOT EXISTS sessions (
       token TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at INTEGER NOT NULL
@@ -83,6 +84,13 @@ export async function ensureSchema(db: D1Database): Promise<void> {
       created_at INTEGER NOT NULL, invitees TEXT
     )`),
   ]);
+
+  // Migrate older databases that lack the google_id column (added later).
+  try {
+    await db.prepare("ALTER TABLE users ADD COLUMN google_id TEXT").run();
+  } catch {
+    // Column already exists — fine.
+  }
 }
 
 export class DB {
@@ -116,6 +124,7 @@ export class DB {
       passwordHash: row.password_hash as string,
       salt: row.salt as string,
       githubId: (row.github_id as string) ?? undefined,
+      googleId: (row.google_id as string) ?? undefined,
       createdAt: row.created_at as number,
     };
   }
@@ -128,11 +137,15 @@ export class DB {
     return this.userFromQuery("SELECT * FROM users WHERE github_id = ?", githubId);
   }
 
+  async findUserByGoogleId(googleId: string): Promise<StoredUser | undefined> {
+    return this.userFromQuery("SELECT * FROM users WHERE google_id = ?", googleId);
+  }
+
   async findUserById(id: string): Promise<StoredUser | undefined> {
     return this.userFromQuery("SELECT * FROM users WHERE id = ?", id);
   }
 
-  async createUser(name: string, email: string, passwordHash: string, salt: string, githubId?: string): Promise<StoredUser> {
+  async createUser(name: string, email: string, passwordHash: string, salt: string, githubId?: string, googleId?: string): Promise<StoredUser> {
     const user: StoredUser = {
       id: uuid(),
       name: name.trim(),
@@ -140,11 +153,12 @@ export class DB {
       passwordHash,
       salt,
       githubId,
+      googleId,
       createdAt: Date.now(),
     };
     await this.db
-      .prepare("INSERT INTO users (id, name, email, password_hash, salt, github_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .bind(user.id, user.name, user.email, user.passwordHash, user.salt, user.githubId ?? null, user.createdAt)
+      .prepare("INSERT INTO users (id, name, email, password_hash, salt, github_id, google_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(user.id, user.name, user.email, user.passwordHash, user.salt, user.githubId ?? null, user.googleId ?? null, user.createdAt)
       .run();
     return user;
   }
