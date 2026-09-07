@@ -2,30 +2,45 @@
 
 ## System Overview
 
+Huddle berjalan **seluruhnya di Cloudflare**. Tidak ada server Node/VPS/PC — semua
+realtime, data, dan media di-edge/serverless.
+
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         MONOREPO (pnpm + Turborepo)                │
-│                                                                     │
-│  ┌──────────────────┐  ┌────────────────────┐  ┌────────────────┐  │
-│  │  packages/shared  │  │   apps/server      │  │   apps/web     │  │
-│  │                   │  │                    │  │                │  │
-│  │  TypeScript types │  │  Express + Socket  │  │  React + Vite  │  │
-│  │  Constants        │  │  .IO signaling     │  │  LiveKit SFU   │  │
-│  │  Shared contracts │  │  Room management   │  │  UI components │  │
-│  └──────────────────┘  └────────────────────┘  └────────────────┘  │
-│         ▲                        ▲                     ▲            │
-│         │                        │                     │            │
-│         └────── workspace:* ─────┴─────────────────────┘            │
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                         MONOREPO (pnpm + Turborepo)                 │
+│                                                                      │
+│  ┌──────────────────┐   ┌────────────────────┐   ┌────────────────┐  │
+│  │  packages/shared  │   │  apps/worker       │   │  apps/web      │  │
+│  │  TypeScript types │   │  Cloudflare Worker │   │  React + Vite  │  │
+│  │  Constants        │   │  + Durable Object  │   │  LiveKit SFU   │  │
+│  │  Shared contracts │   │  (realtime + auth) │   │  UI components │  │
+│  └──────────────────┘   └────────────────────┘   └────────────────┘  │
+│         ▲                        ▲                     ▲              │
+│         │                        │                     │              │
+│         └────── workspace:* ─────┴─────────────────────┘              │
+└──────────────────────────────────────────────────────────────────────┘
+         │ deploy (wrangler)                    ▲ serve static build
+         ▼                                      │
+┌─────────────────────────────────────────────────────────────┐
+│                 Cloudflare Edge                              │
+│  Worker (apps/worker)  →  https://<name>.workers.dev         │
+│   • fetch handler: /health, /api/livekit/token, /auth/github,│
+│     static assets (web build), /ws → HuddleDO                │
+│   • HuddleDO (Durable Object): semua room/chat/poll/auth     │
+│     dashboard state + WebSocket connections                  │
+│   • D1 binding "DB": users, sessions, history, schedule      │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                 LiveKit Cloud (SFU) — media video/audio
 ```
 
 ## Monorepo Structure
 
 The project uses **pnpm workspaces** with **Turborepo** for orchestration:
 
-- **`packages/shared/`** (`@meet-app/shared`) — Pure TypeScript types and constants shared between server and web. No runtime dependencies; built via `tsc`.
-- **`apps/server/`** (`@meet-app/server`) — Node.js signaling server. Express HTTP + Socket.IO WebSocket. Manages rooms, relay signals, broadcasts events. Uses in-memory storage (no database).
-- **`apps/web/`** (`@meet-app/web`) — React 19 SPA. Vite dev server, WebRTC peer connections, Socket.IO client. 18 components, 2 contexts, 1 hook.
+- **`packages/shared/`** (`@meet-app/shared`) — Pure TypeScript types and constants shared between worker and web. No runtime dependencies; built via `tsc`.
+- **`apps/worker/`** (`@meet-app/worker`) — Cloudflare Worker backend. One Worker entry (`index.ts`) + one Durable Object (`HuddleDO`) that owns every WebSocket connection and all room/chat/poll/auth/dashboard state. Uses the D1 binding for persistence.
+- **`apps/web/`** (`@meet-app/web`) — React 19 SPA. Vite build output is uploaded as Worker static assets. Talks to the Worker over a raw WebSocket via a Socket.IO-compatible adapter (`src/lib/wsSocket.ts`).
 
 ### Turborepo Task Graph
 
@@ -33,66 +48,84 @@ The project uses **pnpm workspaces** with **Turborepo** for orchestration:
 build  ← depends on ^build (shared builds first)
 dev    ← no cache, persistent
 test   ← depends on build
-lint   ← standalone
 typecheck ← depends on ^build
 ```
 
 ## Data Flow
 
-### Signaling Path (Socket.IO)
+### Realtime Path (WebSocket → Durable Object)
+
+Client opens a WebSocket to `/ws` on the Worker; the Worker forwards it to the
+single global `HuddleDO` Durable Object (`idFromName("global")`). The DO owns all
+connections and routes events between them.
 
 ```
-Client A                   Server                     Client B
-   │                         │                          │
-   │── CREATE_ROOM ──────────►                          │
-   │◄── ROOM_CREATED ────────│                          │
-   │                         │                          │
-   │                         │◄── JOIN_ROOM ────────────│
-   │                         │── ROOM_JOINED ──────────►│
-   │                         │── PARTICIPANT_JOINED ───►│
-   │                         │── ROOM_STATE ──────────►│ (all)
-   │                         │                          │
-   │◄── SIGNAL (offer) ──────│◄── SIGNAL (offer) ───────│
-   │── SIGNAL (answer) ──────│── SIGNAL (answer) ──────►│
-   │◄── SIGNAL (ICE) ────────│◄── SIGNAL (ICE) ────────│
-   │                         │                          │
-   │════════════════════════════════════════════════════│
-   │              WebRTC P2P Media Stream               │
-   │════════════════════════════════════════════════════│
+Client A                 Worker (HuddleDO)                Client B
+   │                           │                            │
+   │── room:create ───────────►│                            │
+   │◄── room:created ──────────│                            │
+   │◄── meeting:started ──────►│                            │
+   │                           │◄── room:join ─────────────│
+   │                           │── room:joined ───────────►│
+   │                           │── participant:joined ────►│
+   │                           │── room:state ────────────►│ (all)
+   │◄── signal (offer) ────────│◄── signal (offer) ────────│
+   │── signal (answer) ────────│── signal (answer) ───────►│
+   │◄── signal (ICE) ──────────│◄── signal (ICE) ──────────│
+   │                           │                            │
+   │════════════════════════════════════════════════════════│
+   │              WebRTC P2P Media Stream                   │
+   │════════════════════════════════════════════════════════│
 ```
+
+**Wire protocol** (JSON over WebSocket):
+
+```
+client → server: { e: event, d: data, ack?: number }
+server → client: { e: event, d: data, ack?: number }
+```
+
+- `ack` present → resolves the matching pending `emit(cb)` (used by auth/dashboard).
+- no `ack` → normal event dispatch to registered listeners.
+- On connect the server sends `{ e: "connect", d: { id } }` so the client learns its
+  socket id and marks the connection live.
+
+### Auth & Dashboard (ack-based)
+
+Register/login/logout/me and schedule/history use the same WebSocket with ack
+callbacks (matches the old Socket.IO ack pattern). Passwords hashed with **PBKDF2**
+(Web Crypto, 100k iterations); sessions stored in D1.
 
 ### Chat & Feature Path
 
 ```
-Client A                         Server                    All Clients
-   │                               │                          │
-   │── CHAT_MESSAGE {text} ───────►│                          │
-   │                               │── CHAT_MESSAGE (full) ──►│
-   │                               │                          │
-   │── SEND_REACTION {type} ──────►│                          │
-   │                               │── REACTION_BROADCAST ───►│
-   │                               │                          │
-   │── CREATE_POLL {question,opts}►│                          │
-   │                               │── POLL_UPDATE ──────────►│
-   │                               │                          │
-   │── CAPTION_SEGMENT {text} ────►│                          │
-   │                               │── CAPTION_SEGMENT ──────►│ (final only)
+Client A                    Worker (HuddleDO)                All Clients
+   │                               │                            │
+   │── chat:message {text} ───────►│                            │
+   │                               │── chat:message (full) ────►│
+   │── reaction:send {type} ──────►│                            │
+   │                               │── reaction:broadcast ─────►│
+   │── poll:create {question,opts}►│                            │
+   │                               │── poll:update ────────────►│
+   │── caption:segment {text} ────►│                            │
+   │                               │── caption:segment ────────►│ (final only)
 ```
 
-**Chat notification** (client-side): When a `CHAT_MESSAGE` arrives and the recipient's chat panel is closed, `RoomPage` (a) increments `unreadChat` → red pill badge on the Chat button in `ControlBar`, and (b) shows a floating toast (sender + preview) that auto-dismisses after 4s. Both clear when the panel is opened.
+**Chat notification** (client-side): When a `CHAT_MESSAGE` arrives and the recipient's
+chat panel is closed, `RoomPage` (a) increments `unreadChat` → red pill badge on the
+Chat button in `ControlBar`, and (b) shows a floating toast that auto-dismisses after 4s.
 
 ## Media Flow (LiveKit SFU)
 
-The video engine is **LiveKit**, a Selective Forwarding Unit (SFU), which replaced the
-old P2P WebRTC mesh. Each participant publishes their local track **once** to the LiveKit
-server; the server forwards media **selectively** to the others in the room. This scales
-to dozens of participants per meeting and millions of users across distributed servers.
+The video engine is **LiveKit**, a Selective Forwarding Unit (SFU). Each participant
+publishes their local track **once** to the LiveKit server; the server forwards media
+**selectively**. This scales to dozens of participants per meeting.
 
 ```
 Client A (joiner)                 LiveKit SFU                    Client B
       │                                │                              │
       │  1. GET /api/livekit/token     │                              │
-      │      (server issues JWT)       │                              │
+      │      (Worker issues HS256 JWT) │                              │
       │───────────────────────────────►│                              │
       │  2. Room.connect(url, token)   │                              │
       │───────────────────────────────►│                              │
@@ -102,36 +135,24 @@ Client A (joiner)                 LiveKit SFU                    Client B
       │                                │─────────────────────────────►│
       │  5. subscribe to remote tracks │◄────────────────────────────│
       │◄────────── forwarded ──────────│                              │
-      │                                │                              │
-      │══════ Media flows via SFU ═════║══════ (not peer-to-peer) ═══│
 ```
 
-**Token endpoint**: `GET /api/livekit/token?room=&name=` (server, `handlers/liveKit.ts`)
-issues a short-lived JWT (`livekit-server-sdk`) scoped to a room with publish/subscribe.
-The API secret stays server-side — never sent to the client.
+**Token endpoint**: `GET /api/livekit/token?room=&name=` (Worker, `src/livekit.ts`)
+issues a short-lived HS256 JWT signed with the LiveKit API secret via Web Crypto
+(`crypto.subtle`), scoped to a room with publish/subscribe. The API secret stays as a
+Worker secret — never sent to the client.
 
 **Client hook**: `useLiveKit` (`hooks/useLiveKit.ts`) connects to the room, publishes
-local camera+mic (and screen share), and surfaces remote tracks as `MediaStream`s so
-`VideoGrid`/`VideoPlayer`/`SpeakerView` keep working unchanged.
-
-**Mute / push-to-talk**: mic mute calls `LocalAudioTrack.mute()/unmute()` on the LiveKit
-track (the SFU stops forwarding when muted). Push-to-talk uses the deterministic
-`setMute(muted)` from `useLiveKit` (distinct from `toggleMute`). The `usePushToTalk` hook
-owns the hold-state: while its hotkey is held it unmutes, and on release / window blur /
-unmount it re-mutes — so a user can never be left broadcasting accidentally.
-
-**Screen share**: `toggleScreenShare()` captures via `getDisplayMedia`, publishes a
-screen-share LocalVideoTrack, and surfaces it as `screenStream` for the local preview.
+local camera+mic (and screen share), and surfaces remote tracks as `MediaStream`s.
 
 ## Room Lifecycle
 
 ```
 ┌──────────┐     ┌──────────┐     ┌──────────────┐     ┌────────────┐
 │  Create  │────►│   Join   │────►│   Meeting    │────►│ Leave/End  │
-│          │     │          │     │              │     │            │
-│ Host gets│     │ Code or  │     │ LiveKit SFU  │     │ Host ends  │
-│ room code│     │ URL with │     │ chat, polls  │     │ or user    │
-│          │     │ ?join=   │     │ reactions    │     │ leaves     │
+│  Host    │     │ Code/URL │     │ LiveKit SFU  │     │ Host ends  │
+│  gets    │     │ ?join=   │     │ chat, polls  │     │ or user    │
+│  code    │     │          │     │ reactions    │     │ leaves     │
 └──────────┘     └──────────┘     └──────────────┘     └────────────┘
                        │                 │                    │
                        ▼                 │                    ▼
@@ -140,8 +161,7 @@ screen-share LocalVideoTrack, and surfaces it as `screenStream` for the local pr
                  │ Room     │            │              │ room     │
                  │ (locked) │            │              │ removed  │
                  └──────────┘            │              │ if empty │
-                                         │              └──────────┘
-                                         ▼
+                                         ▼              └──────────┘
                                    ┌──────────┐
                                    │ Host     │
                                    │ transfers│
@@ -149,17 +169,21 @@ screen-share LocalVideoTrack, and surfaces it as `screenStream` for the local pr
                                    └──────────┘
 ```
 
-### State Details
+### State Details (in `HuddleDO`)
 
-1. **Create**: `RoomManager.createRoom(hostId, hostName)` → generates 6-char code from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, creates `Room` object, initializes empty chat history.
-2. **Join**: If room is locked → `addToWaitingRoom()`. Otherwise `joinRoom()` adds `User` to `participants[]`, broadcasts `PARTICIPANT_JOINED` and `ROOM_STATE`.
-3. **Meeting**: WebRTC peers negotiate. Chat messages broadcast via `CHAT_MESSAGE`. All feature events flow through Socket.IO.
-4. **Leave**: `leaveRoom()` removes participant. If host leaves, first remaining participant becomes host. If room empties, all data is deleted.
-5. **End Meeting**: Host emits `END_MEETING`. Server broadcasts `MEETING_ENDED` to all participants and cleans up polls.
+1. **Create**: `createRoom(hostId, hostName)` → generates 6-char code, creates `Room`, initializes chat history.
+2. **Join**: If locked → waiting room. Otherwise adds `User` to `participants[]`, broadcasts `participant:joined` and `room:state` (+ `chat:history`).
+3. **Meeting**: WebRTC peers negotiate via LiveKit. Chat/polls/reactions flow through the DO.
+4. **Leave**: `leaveRoom()` removes participant. If host leaves, first remaining becomes host. If room empties, all room data is deleted.
+5. **End Meeting**: Host emits `meeting:end`. DO broadcasts `meeting:ended` to all, records history to D1, cleans up polls.
+
+> **State persistence**: Durable Object state is stored in Cloudflare's SQLite-backed
+> DO storage (`new_sqlite_classes`), so room/chat state survives request routing and
+> DO migration — unlike the old in-memory Node maps.
 
 ## Shared Package Contract
 
-`@meet-app/shared` defines the type-safe interface between server and web:
+`@meet-app/shared` defines the type-safe interface between worker and web.
 
 ### Types (19 interfaces/types)
 
@@ -175,7 +199,7 @@ screen-share LocalVideoTrack, and surfaces it as `screenStream` for the local pr
 | `RoomState` | `{ room, participants }` |
 | `MeetingSettings` | `{ title, resolution, audioDevice, videoDevice, backgroundBlur, virtualBackground }` |
 | `RecordingState` | `{ isRecording, startedBy, startedAt }` |
-| `LayoutMode` | `"auto" \| "grid" \| "speaker" \| "sidebar"` (Adjust view) |
+| `LayoutMode` | `"auto" \| "grid" \| "speaker" \| "sidebar"` |
 | `InviteLink` | `{ code, url }` |
 | `MeetingNote` | `{ id, text, timestamp, author }` |
 | `ActionItem` | `{ id, text, assignee, done }` |
@@ -193,10 +217,10 @@ screen-share LocalVideoTrack, and surfaces it as `screenStream` for the local pr
 | `SOCKET_EVENTS` | 40+ event name strings (see [API.md](./API.md)) |
 | `ROOM_CONFIG.MAX_PARTICIPANTS` | `10` |
 | `ROOM_CONFIG.CODE_LENGTH` | `6` |
-| `ROOM_CONFIG.CODE_CHARS` | `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no ambiguous chars) |
-| `RESOLUTION_PRESETS` | 360p, 480p, 720p, 1080p with width/height/frameRate |
-| `MEDIA_CONSTRAINTS` | Default: 720p30, echo cancellation, noise suppression |
-| `AI_COMPANION_SYSTEM` | System prompt for AI assistant behavior |
+| `ROOM_CONFIG.CODE_CHARS` | `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` |
+| `RESOLUTION_PRESETS` | 360p, 480p, 720p, 1080p |
+| `MEDIA_CONSTRAINTS` | Default 720p30, echo cancellation, noise suppression |
+| `AI_COMPANION_SYSTEM` | System prompt for AI assistant |
 | `POLL_MAX_OPTIONS` | `6` |
 
 ## Dependency Graph
@@ -204,54 +228,72 @@ screen-share LocalVideoTrack, and surfaces it as `screenStream` for the local pr
 ```
 @meet-app/web ──────────┐
   (React, Vite,         │
-   socket.io-client,    │
+   livekit-client,      │
    lucide-react)        │
                         ▼
-              @meet-app/shared ◄──── @meet-app/server
-                                   (Express, Socket.IO,
-                                    uuid, dotenv, cors,
-                                    tsx dev runner)
+              @meet-app/shared ◄──── @meet-app/worker
+                                   (wrangler, @cloudflare/workers-types)
 ```
 
-Both `web` and `server` depend on `@meet-app/shared` via `"workspace:*"`. The shared package is built first (Turborepo `^build` dependency).
+Both `web` and `worker` depend on `@meet-app/shared` via `"workspace:*"`.
 
 ### Key Runtime Dependencies
 
-**Server**: `socket.io@^4`, `express@^4`, `cors@^2.8`, `uuid@^11`, `dotenv@^16`
-**Web**: `react@^19`, `react-dom@^19`, `socket.io-client@^4`, `lucide-react@^0.468`
-**Dev**: `turbo@^2.4`, `typescript@^5.7`, `vitest@^3`, `vite@^6` (web), `tsx@^4` (server)
+**Worker**: `wrangler@^3`, `@cloudflare/workers-types` (build only), `@meet-app/shared`
+**Web**: `react@^19`, `react-dom@^19`, `livekit-client@^2`, `lucide-react@^0.468`
 
-## Server Initialization
+## Worker Initialization
 
 ```typescript
-// apps/server/src/index.ts
-const io = new Server(httpServer, { cors: { origin: CORS_ORIGIN } });
-const roomManager = new RoomManager();
-
-setupRoomHandlers(io, roomManager);        // Room CRUD + disconnect
-setupSignalingHandler(io, roomManager);     // WebRTC signal relay
-setupChatHandler(io, roomManager);          // Chat messages
-setupFeatureHandlers(io, roomManager);      // Hand raise, layout, settings, background, invite
-setupMeetingHandlers(io, roomManager);      // Reactions, polls, captions, waiting room, AI, end meeting
+// apps/worker/src/index.ts — ExportedHandler
+export default {
+  async fetch(request, env) {
+    if (path === "/health") return json({ ok: true });
+    if (path === "/api/livekit/token") return json({ token, url });   // HS256 JWT
+    if (path === "/auth/github/callback") return handleGithubCallback(request, env);
+    if (path === "/ws") return env.HUDDLE_DO.get(idFromName("global")).fetch(request);
+    return env.ASSETS.fetch(request);                                  // web build
+  },
+};
 ```
 
-All handlers share the same `io` and `roomManager` instances. Each `io.on("connection")` registers event listeners per socket. The `RoomManager` is the single source of truth for all room/user state (in-memory `Map`s).
+```typescript
+// apps/worker/src/huddleDO.ts — DurableObject
+export class HuddleDO implements DurableObject {
+  async fetch(request) {
+    // accept WebSocket, register socket id, route events to this.handle()
+  }
+  private async handle(ws, event, data, ack) {
+    switch (event) {
+      case "room:create": /* ... */ break;
+      case "chat:message": /* store + broadcast */ break;
+      // ... every SOCKET_EVENTS handler
+    }
+  }
+}
+```
+
+`HuddleDO` is the single source of truth for all room/user/chat/poll state (in-memory
+`Map`s + DO storage). It also owns the `DB` wrapper over the D1 binding for
+users/sessions/history/schedule.
 
 ## Client Initialization
 
 ```typescript
-// App.tsx — view state drives which page renders.
-// "home" → HomePage (create/join); "room" → RoomPage (the meeting).
-// Invite links (?join=CODE) open HomePage with the code pre-filled;
-// the user enters their name and clicks Join — no forced room view.
-<SocketProvider>        // Creates Socket.IO connection
+// App.tsx — "home" → HomePage; "room" → RoomPage.
+<SocketProvider>        // Creates WsSocket (raw WebSocket → /ws, Socket.IO-compatible)
   <RoomProvider>        // Room state, participants, messages, layout
     {view === "home"
-      ? <HomePage />    // Create/join meeting (prefills code from ?join=CODE)
-      : <RoomPage />    // Main meeting view
+      ? <HomePage />
+      : <RoomPage />
     }
   </RoomProvider>
 </SocketProvider>
 ```
 
-`RoomPage` wires all 16+ components, 20+ socket event listeners, and the `useLiveKit` hook. The hook manages the LiveKit SFU room connection, publishes local camera/mic, and surfaces remote tracks as `MediaStream`s. Push-to-talk is orchestrated by the `usePushToTalk` hook in `RoomPage`, which drives `useLiveKit.setMute()` and broadcasts the mute state over the existing `TOGGLE_MUTE` event.
+`SocketContext` uses `WsSocket` (`src/lib/wsSocket.ts`), a minimal Socket.IO-compatible
+adapter over a raw WebSocket. It exposes `on/off/once/emit(id, data, ack)/close`, `.id`,
+`connect`/`disconnect` events, auto-reconnect with backoff, and re-emits
+`room:create`/`room:join` on reconnect so the DO re-syncs room state + chat history.
+
+`RoomPage` wires all 16+ components, 20+ socket event listeners, and the `useLiveKit` hook.

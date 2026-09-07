@@ -1,12 +1,16 @@
 # Huddle — Deployment
 
+Huddle berjalan **seluruhnya di Cloudflare** (Worker + Durable Object + D1). Deployment
+adalah `wrangler deploy` — tidak ada server Node, VPS, Docker, atau Render/Railway.
+
 ## Prerequisites
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| Node.js | ≥ 18.x | Runtime (ES2022 target) |
+| Node.js | ≥ 18.x | Runtime untuk tooling (pnpm, wrangler) |
 | pnpm | ≥ 9.x | Package manager + workspace orchestration |
-| Git | any | Version control |
+| Cloudflare account | — | Worker + D1 (atau D1 terpisah per project) |
+| LiveKit Cloud | — | SFU media (gratis tier tersedia) |
 
 ## Local Development
 
@@ -17,307 +21,188 @@ cd meet-app
 pnpm install
 ```
 
-This installs all workspace dependencies. pnpm automatically links `@meet-app/shared` between server and web via `workspace:*`.
-
-### 2. Start Development Servers
+### 2. Jalankan Worker & Web (dev, hot reload)
 
 ```bash
-# Start both server and web concurrently
-pnpm dev
+# Terminal 1 — Worker lokal (wrangler dev, port 8787)
+cd apps/worker
+npx wrangler dev
 
-# Or start individually:
-pnpm dev:server    # Express + Socket.IO on port 3001
-pnpm dev:web       # Vite dev server on port 5173
+# Terminal 2 — Frontend (Vite dev, port 5173)
+pnpm dev:web
 ```
 
-**Dev servers**:
-- **Server**: `tsx watch src/index.ts` — auto-restarts on file changes
-- **Web**: `vite` — HMR (Hot Module Replacement) enabled
+Vite mem-proxy `/ws` ke `http://localhost:8787`, jadi koneksi WebSocket mengarah ke worker
+lokal. Buka **http://localhost:5173**.
 
-### 3. Open Browser
+> `wrangler dev` membutuhkan login (`npx wrangler login`) dan D1 binding yang valid
+> (`wrangler.toml`). Untuk pengembangan tanpa D1, komentari binding D1 — fitur
+> auth/dashboard tidak akan persist, tapi room/chat/video tetap jalan.
 
-Navigate to `http://localhost:5173`.
+## Konfigurasi Cloudflare
 
-## Environment Variables
+### 1. D1 Database
 
-### Server (`apps/server/`)
-
-Create `apps/server/.env`:
-
-```env
-PORT=3001
-CORS_ORIGIN=http://localhost:5173
-CLIENT_URL=http://localhost:5173
-DATA_DIR=./data
-```
-
-| Variable | Default | Description |
-|--------|---------|-------------|
-| `PORT` | `3001` | Server listen port |
-| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin for Socket.IO and Express |
-| `CLIENT_URL` | `http://localhost:5173` | Base URL for invite-link generation (used in the mailto: invite body and shareable links) |
-| `CF_ACCOUNT_ID` / `D1_DATABASE_ID` / `CF_API_TOKEN` | *(empty — disabled)* | Cloudflare D1 storage credentials (replaces the old `DATA_DIR`/`db.json`). |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | *(empty — disabled)* | GitHub OAuth login ("Continue with GitHub"). Callback URL: `<CLIENT_URL>/auth/github/callback`. |
-| `LIVEKIT_URL` | *(empty — disabled)* | LiveKit SFU server URL (e.g. from LiveKit Cloud). |
-| `LIVEKIT_API_KEY` | *(empty — disabled)* | LiveKit API key. |
-| `LIVEKIT_API_SECRET` | *(empty — disabled)* | LiveKit API secret. |
-
-### Web (`apps/web/`)
-
-`VITE_GITHUB_CLIENT_ID` — optional. When set (in `apps/web/.env`), the **"Continue with GitHub"** button in the Sign-in modal redirects to GitHub OAuth.
-
-No environment variables required. Vite proxies Socket.IO connections to the server automatically.
-
-## Persistence (Cloudflare D1)
-
-Huddle stores durable data — user accounts, sessions, meeting history, and scheduled
-meetings — in **Cloudflare D1** (serverless SQLite) via its HTTP API, replacing the old
-`db.json` file. Tables are created automatically on first use (`CREATE TABLE IF NOT EXISTS`).
-
-Configure in `apps/server/.env` (see the `.env.example` notes):
-- `CF_ACCOUNT_ID` — from `https://dash.cloudflare.com` (Your Profile → Account ID).
-- `D1_DATABASE_ID` — Workers & Pages → D1 → your database → database ID.
-- `CF_API_TOKEN` — My Profile → API Tokens → create a token with the **"D1 → Edit"** permission (account-scoped).
-
-If D1 is not configured, the server still boots but auth/data features are unavailable
-(logs a warning). Passwords are hashed with salted scrypt; login sessions persist so users
-stay signed in across restarts.
-
-## Project Structure
-
-```
-meet-app/
-├── package.json              # Root: turbo scripts, devDependencies
-├── pnpm-workspace.yaml       # Workspace: apps/* + packages/*
-├── turbo.json                # Turborepo task config
-├── tsconfig.base.json        # Shared TypeScript config (ES2022, strict)
-├── vitest.workspace.ts       # Vitest workspace config
-├── packages/
-│   └── shared/
-│       ├── package.json      # @meet-app/shared (pure types)
-│       ├── tsconfig.json
-│       └── src/
-│           ├── index.ts      # Re-exports types + constants
-│           ├── types.ts      # 19 TypeScript interfaces/types
-│           ├── constants.ts  # SOCKET_EVENTS, ROOM_CONFIG, etc.
-│           └── __tests__/    # constants.test.ts
-├── apps/
-│   ├── server/
-│   │   ├── package.json      # @meet-app/server
-│   │   ├── tsconfig.json
-│   │   └── src/
-│   │       ├── index.ts      # Express + Socket.IO setup
-│   │       ├── services/
-│   │       │   └── RoomManager.ts
-│   │       └── handlers/
-│   │           ├── roomHandlers.ts
-│   │           ├── signalingHandler.ts
-│   │           ├── chatHandler.ts
-│   │           ├── featureHandlers.ts
-│   │           └── meetingHandlers.ts
-│   └── web/
-│       ├── package.json      # @meet-app/web
-│       ├── index.html
-│       ├── vite.config.ts
-│       ├── tsconfig.json
-│       └── src/
-│           ├── App.tsx
-│           ├── main.tsx
-│           ├── index.css
-│           ├── contexts/
-│           ├── pages/
-│           ├── components/
-│           └── hooks/
-└── docs/                     # This documentation
-```
-
-## Build
+Buat database D1 (sekali):
 
 ```bash
-# Build all packages (shared → server → web)
-pnpm build
-
-# Build individually:
-pnpm turbo build --filter=@meet-app/shared
-pnpm turbo build --filter=@meet-app/server
-pnpm turbo build --filter=@meet-app/web
+cd apps/worker
+npx wrangler d1 create huddle
 ```
 
-Build outputs to `dist/` in each package. Turborepo ensures `shared` builds first.
+Salin `database_id` hasilnya ke `apps/worker/wrangler.toml`:
 
-## Testing
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "huddle"
+database_id = "<database_id>"
+```
+
+Tabel dibuat otomatis saat pertama koneksi (`CREATE TABLE IF NOT EXISTS` di
+`src/database.ts:ensureSchema`). D1 punya dashboard di
+https://dash.cloudflare.com → Workers & Pages → D1.
+
+### 2. Secrets (wajib untuk video)
 
 ```bash
-# Run all tests across all packages
-pnpm test
-
-# Run tests in watch mode
-pnpm test:watch
-
-# Run tests for a specific package
-pnpm turbo test --filter=@meet-app/shared
-pnpm turbo test --filter=@meet-app/server
-pnpm turbo test --filter=@meet-app/web
+cd apps/worker
+npx wrangler secret put LIVEKIT_API_SECRET
 ```
 
-Vitest workspace config in `vitest.workspace.ts` discovers test files across all packages.
+Secret yang didukung:
 
-## Type Checking
+| Secret | Wajib? | Deskripsi |
+|--------|--------|-----------|
+| `LIVEKIT_API_SECRET` | Ya (untuk video) | LiveKit API secret (LiveKit Cloud → project → API keys) |
+| `GITHUB_CLIENT_ID` | Opsional | GitHub OAuth app client id |
+| `GITHUB_CLIENT_SECRET` | Opsional | GitHub OAuth app client secret |
+
+### 3. Vars (non-secret, di `wrangler.toml` `[vars]`)
+
+```toml
+[vars]
+LIVEKIT_URL = "wss://<your-project>.livekit.cloud"
+LIVEKIT_API_KEY = "API<...>"
+CLIENT_URL = "https://<worker>.workers.dev"
+```
+
+| Var | Wajib? | Deskripsi |
+|-----|--------|-----------|
+| `LIVEKIT_URL` | Ya (video) | LiveKit server URL |
+| `LIVEKIT_API_KEY` | Ya (video) | LiveKit API key |
+| `CLIENT_URL` | Opsional | Base URL untuk invite links & GitHub OAuth callback; default folder |
+
+## Build & Deploy
 
 ```bash
-# Type-check all packages
-pnpm typecheck
+# 1. Build frontend (akan di-upload sebagai static assets worker)
+pnpm --filter @meet-app/web build
+
+# 2. Deploy worker + assets + D1 binding
+cd apps/worker
+npx wrangler deploy
 ```
 
-## Linting
+Output:
+
+```
+Uploaded huddle (12.26 sec)
+  https://huddle.<subdomain>.workers.dev
+```
+
+Buka URL tersebut. Worker menyajikan **semuanya** di satu origin:
+
+- Frontend (build `apps/web/dist`, via `assets` binding)
+- `GET /health` → `{"ok":true}`
+- `GET /api/livekit/token?room=&name=` → JWT LiveKit
+- `GET /auth/github/callback` → GitHub OAuth callback
+- `GET /ws` → WebSocket realtime (Durable Object)
+
+## Env untuk GitHub OAuth (opsional)
+
+1. Buat OAuth App di GitHub (Settings → Developer settings → OAuth Apps):
+   - **Homepage URL**: `https://<worker>.workers.dev`
+   - **Callback URL**: `https://<worker>.workers.dev/auth/github/callback`
+2. Set `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` sebagai secrets worker.
+3. Set `CLIENT_URL=https://<worker>.workers.dev` di `[vars]`.
+
+Tanpa konfigurasi ini, tombol GitHub di sign-in menampilkan toast "belum dikonfigurasi".
+
+## Custom Domain (opsional, permanen)
+
+URL `*.workers.dev` gratis tapi tidak permanen (bisa berubah). Untuk URL permanen:
+
+1. Daftarkan domain di registrar mana pun (Namecheap, Cloudflare Registrar, dll).
+2. Di Cloudflare dashboard: **Workers & Pages → huddle → Settings → Domains & Routes → Add**
+   — tambahkan `meet.domainmu.com` dan ikuti instruksi CNAME ke
+   `<worker>.<subdomain>.workers.dev`.
+3. Update `CLIENT_URL` di `[vars]` → deploy ulang.
+
+Biaya: hanya biaya domain (~$10/tahun); Cloudflare Tunnel/Worker tetap gratis.
+
+## Verifikasi Deploy
 
 ```bash
-pnpm lint
+# Health
+curl https://<worker>.workers.dev/health
+# → {"ok":true}
+
+# LiveKit token (harus 200, bukan 503)
+curl "https://<worker>.workers.dev/api/livekit/token?room=demo&name=T"
+# → {"token":"...","url":"wss://..."}
+
+# Frontend
+curl -I https://<worker>.workers.dev/
+# → HTTP 200
 ```
 
-## Production Deployment
+Smoke test WebSocket penuh (create room → guest join → chat broadcast) bisa dijalankan
+dengan skrip Node singkat — lihat riwayat commit "Cloudflare Workers rewrite" untuk
+contoh, atau verifikasi manual di browser: buka URL, **New meeting**, izinkan mic/kamera.
 
-### Option 1: Manual (single process)
+## Rollback
 
-The server serves the built web client (`apps/web/dist`) and the Socket.IO endpoint
-(`/socket.io`) together on one port. This matches the client, which connects Socket.IO
-to the **same origin** it was loaded from — so there is no CORS and no separate static
-server to run.
+`wrangler deploy` membuat versi baru tiap rilis. Untuk rollback:
 
 ```bash
-# 1. Build everything (web → dist, server → dist)
-pnpm build
-
-# 2. Start the single production server (API + Socket.IO + static web)
-cd apps/server
-node dist/index.js
+cd apps/worker
+npx wrangler deployments list
+npx wrangler rollback <deployment-id>
 ```
 
-Open `http://localhost:3001`. The server auto-detects `apps/web/dist` and serves it.
+## Scaling (skala kecil → menengah)
 
-> If you'd rather keep the web and server on separate origins, you must configure the
-> web client to point Socket.IO at the server origin (see note below) and set
-> `CORS_ORIGIN` to the web origin.
+Arsitektur saat ini: **satu Durable Object global** untuk semua room — sangat cukup untuk
+skala kecil/menengah (puluhan hingga ratusan meeting aktif bersamaan). D1 + LiveKit Cloud
+menangani beban data + media.
 
-### Option 2: Docker
+Ketika melebihi kapasitas satu DO (ribuan koneksi simultan), langkah berikut:
 
-Create `Dockerfile` at project root:
-
-```dockerfile
-FROM node:20-alpine AS base
-RUN corepack enable
-RUN corepack prepare pnpm@latest --activate
-
-# Install dependencies
-FROM base AS deps
-WORKDIR /app
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/shared/package.json ./packages/shared/
-COPY apps/server/package.json ./apps/server/
-COPY apps/web/package.json ./apps/web/
-RUN pnpm install --frozen-lockfile
-
-# Build
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN pnpm build
-
-# Server (serves API + Socket.IO + the built web client on one port)
-FROM node:20-alpine AS server
-WORKDIR /app
-# Keep the apps/* layout so the server can resolve apps/web/dist relative to itself
-COPY --from=builder /app/apps/server/dist ./apps/server/dist
-COPY --from=builder /app/apps/server/package.json ./apps/server/
-COPY --from=builder /app/apps/web/dist ./apps/web/dist
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-WORKDIR /app/apps/server
-# Durable data (accounts, history, schedule) lives in Cloudflare D1 — not on a
-# container volume. D1 credentials come from env (CF_ACCOUNT_ID/D1_DATABASE_ID/CF_API_TOKEN).
-# LiveKit + GitHub credentials are also env-driven (see docs/DEPLOYMENT.md).
-EXPOSE 3001
-ENV PORT=3001
-CMD ["node", "dist/index.js"]
-
-# Web (static) — optional split deployment (serves only the client; Socket.IO
-# then needs the client to target the server origin — see CORS section).
-FROM nginx:alpine AS web
-COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
-EXPOSE 80
-```
-
-Build and run (single process, data in Cloudflare D1):
-
-```bash
-docker build --target server -t meet-app-server .
-docker run -p 3001:3001 \
-  -e CF_ACCOUNT_ID=... -e D1_DATABASE_ID=... -e CF_API_TOKEN=... \
-  -e LIVEKIT_URL=... -e LIVEKIT_API_KEY=... -e LIVEKIT_API_SECRET=... \
-  meet-app-server
-```
-
-Open `http://localhost:3001`. The server image bundles the built web client and serves it
-together with Socket.IO — no separate frontend, no CORS needed. Durable data (accounts,
-sessions, history, schedule) is stored in **Cloudflare D1** via the HTTP API, so it survives
-container restarts and redeploys without a volume.
-
-For a split deployment instead, deploy `apps/web/dist` to static hosting and point the
-client's Socket.IO connection at the server origin (see below).
-
-### Option 3: Platform-as-a-Service (recommended — HTTPS + Docker managed)
-
-Both **Render** and **Railway** build the included `Dockerfile`, provide HTTPS
-automatically (required for WebRTC), restart the service on crash, and pass env vars.
-Durable data lives in **Cloudflare D1** (no disk volume needed).
-
-#### Render
-
-The repo includes `render.yaml`. Push to GitHub, then:
-
-1. In Render dashboard: **New → Blueprint** and select the repo (it reads `render.yaml`).
-2. After first deploy, set the two `sync: false` env vars to your URL:
-   - `CORS_ORIGIN` = `https://<your-app>.onrender.com`
-   - `CLIENT_URL` = same
-3. Add the service env vars: `CF_ACCOUNT_ID`, `D1_DATABASE_ID`, `CF_API_TOKEN` (D1),
-   plus `LIVEKIT_*` (video) and `GITHUB_*` (OAuth) as needed.
-
-#### Railway
-
-1. **New Project → Deploy from GitHub repo** (Railway auto-detects the Dockerfile).
-2. Add env vars: `PORT=3001`, `CORS_ORIGIN=https://<your-app>.up.railway.app`, `CLIENT_URL=same`,
-   plus `CF_ACCOUNT_ID`, `D1_DATABASE_ID`, `CF_API_TOKEN`, and `LIVEKIT_*` / `GITHUB_*` as needed.
-3. No volume required — data persists in Cloudflare D1.
-
-Health check: the server exposes `GET /health` (used by both platforms' uptime checks).
-
-## CORS Configuration
-
-The server uses Express CORS middleware and Socket.IO CORS config. Both must allow the client origin:
-
-```
-CORS_ORIGIN=https://your-deployed-web-url
-CLIENT_URL=https://your-deployed-web-url
-```
-
-For local development, defaults to `http://localhost:5173`.
-
-## STUN / TURN (LiveKit)
-
-Media flows through the **LiveKit SFU**, not P2P, so NAT/TURN is handled by the LiveKit
-server itself (LiveKit Cloud manages TURN automatically). No STUN/TURN config is needed in
-the app code. For self-hosted LiveKit, configure TURN on the LiveKit server as needed.
+1. **DO per-room**: hash room code → DO instance (`idFromName(code)`), bukan satu DO global
+   — memecah beban dan memanfaatkan isolasi per-ruangan.
+2. **D1 tetap** untuk metadata/users (sudah benar — D1 bukan hot path realtime).
+3. **LiveKit Cloud** scaling: naikkan plan / gunakan multi-region LiveKit.
 
 ## Limitations
 
-- **Room state is in-memory**: live rooms, participants, and chat are kept in memory (normal for realtime), so a server restart ends active meetings. Durable data (accounts, sessions, history, schedule) is persisted to **Cloudflare D1**.
-- **Media requires LiveKit**: video/audio only works when `LIVEKIT_URL`/`LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET` are set. Without them, non-video features still work; the room shows no media (token endpoint returns 503).
-- **Anyone with a room code can join** a live room — joining doesn't require an account (accounts gate the dashboard and Schedule, not the call).
-- **Max participants per room**: Enforced by `ROOM_CONFIG.MAX_PARTICIPANTS` (10); raise it for larger meetings — LiveKit SFU handles many participants, the limit is a product setting.
-- **No HTTPS by default**: WebRTC requires HTTPS in production (except localhost). Use a reverse proxy (nginx, Caddy) or deploy behind a platform that provides TLS.
-- **GitHub OAuth**: implemented server-side (callback + token exchange); requires `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` + `VITE_GITHUB_CLIENT_ID`. Password reset is not implemented.
-- **AI Companion (server)**: Retained server-side handlers use keyword extraction, not a real LLM. The feature is **not surfaced in the web UI** (removed in v0.2).
-- **Live Captions**: Depends on browser Web Speech API support (Chrome/Edge primarily).
+- **Room state in-memory per DO**: live rooms/participants/chat hidup di Durable Object
+  (memori + DO storage). Restart/deploy DO mengakhiri meeting aktif. Data durable
+  (accounts, sessions, history, schedule) di **D1**.
+- **Media requires LiveKit**: video/audio hanya berfungsi saat `LIVEKIT_URL`/
+  `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET` terisi. Tanpa itu, fitur non-video tetap jalan
+  (endpoint token mengembalikan 503).
+- **Anyone with a room code can join** — joining tidak butuh akun (akun meng-gate
+  dashboard & Schedule, bukan panggilan).
+- **Max participants per room**: `ROOM_CONFIG.MAX_PARTICIPANTS` (10); naikkan untuk
+  meeting lebih besar — LiveKit SFU menangani banyak peserta.
+- **HTTPS**: Worker menyediakan HTTPS otomatis (WebRTC aman) tanpa konfigurasi.
+- **GitHub OAuth**: diimplementasikan di Worker (callback + token exchange); butuh
+  `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` + `CLIENT_URL`. Password reset belum
+  diimplementasikan.
+- **AI Companion**: handler keyword-extraction ada di Worker, tapi **tidak disurface di
+  web UI** (dihapus di v0.2).
+- **Live Captions**: tergantung dukungan Web Speech API browser (Chrome/Edge terutama).
+- **CORS**: Worker mengembalikan `Access-Control-Allow-Origin: *` (cocok untuk domain
+  apa pun / trycloudflare). Untuk produksi dengan domain tetap, bisa diperketat ke
+  origin spesifik di `src/index.ts`.

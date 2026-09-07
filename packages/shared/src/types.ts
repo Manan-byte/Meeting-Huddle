@@ -2,7 +2,7 @@
  * @file Shared type definitions for the Huddle video conferencing platform.
  *
  * This file defines all TypeScript interfaces and types shared between the
- * server (apps/server) and web client (apps/web). These types ensure
+ * worker (apps/worker) and web client (apps/web). These types ensure
  * consistent data shapes across the entire application:
  *   - User & Room management (joining, leaving, host controls)
  *   - WebRTC signaling (offers, answers, ICE candidates)

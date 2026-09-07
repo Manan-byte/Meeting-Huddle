@@ -3,8 +3,8 @@
   "private": true,
   "scripts": {
     "dev": "turbo run dev",
-    "dev:server": "turbo run dev --filter=@meet-app/server",
     "dev:web": "turbo run dev --filter=@meet-app/web",
+    "deploy": "pnpm --filter @meet-app/web build && cd apps/worker && wrangler deploy",
     "build": "turbo run build",
     "test": "vitest run",
     "test:watch": "vitest",

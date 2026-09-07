@@ -27,7 +27,7 @@
 | 21 | End Meeting | P1 | Low | RoomPage | END_MEETING, MEETING_ENDED | — |
 | 22 | Light SaaS Theme | P1 | Low | index.css | — | — |
 | 23 | Responsive Video Grid | P1 | Low | VideoGrid | — | — |
-| 24 | Disconnect Handling | P0 | Low | roomHandlers | (disconnect) | — |
+| 24 | Disconnect Handling | P0 | Low | HuddleDO (worker) | (disconnect) | — |
 | 25 | Push-to-Talk | P2 | Medium | ControlBar, usePushToTalk, useLiveKit | TOGGLE_MUTE | User |
 
 ---
@@ -485,6 +485,24 @@ Reactions, Polls, Live Captions, AI Companion, Virtual Background, Settings Pane
 ---
 
 ## Changelog — Recent Fixes & Improvements
+
+### Cloudflare Workers rewrite — always-on, no server, no PC
+- **Backend pindah ke Cloudflare Workers + Durable Objects**: server Node (Express +
+  Socket.IO) diganti full-stack Cloudflare. Realtime, auth, dashboard, LiveKit token,
+  dan static frontend semuanya di-edge — **selalu-on, gratis, tanpa VPS/PC menyala**.
+- **New `apps/worker`**: satu Worker (`src/index.ts`) + satu Durable Object `HuddleDO`
+  (`src/huddleDO.ts`) yang memiliki semua state rooms/chat/polls/auth/dashboard via
+  WebSocket native. `apps/server` (Node lama) dihapus.
+- **WebSocket protocol**: JSON `{ e, d, ack }` — ack untuk auth/dashboard, broadcast
+  untuk room events. Frontend pakai `WsSocket` adapter (`src/lib/wsSocket.ts`) yang
+  API-kompatibel socket.io, jadi komponen tak diubah.
+- **LiveKit token**: HS256 JWT via WebCrypto (`src/livekit.ts`, bukan `livekit-server-sdk`).
+- **Auth**: PBKDF2 (WebCrypto, 100k iter) menggantikan scrypt Node; sessions di D1 binding.
+- **D1**: `Database.ts`/`D1Client.ts` (HTTP API) diganti `DB` wrapper atas D1 binding native.
+- **Deploy**: `wrangler deploy` → `https://huddle.abdmanan513.workers.dev`; frontend di-upload
+  sebagai static assets.
+- **Terverifikasi end-to-end**: `/health`, LiveKit JWT, WebSocket create→join→chat broadcast,
+  auth register/login/me, dashboard schedule — semua persist ke D1.
 
 ### Cloudflare D1 migration — db.json → serverless SQLite
 - **Persistence moved from a JSON file to Cloudflare D1** (serverless SQLite) over its HTTP API. Tables (users, sessions, meeting_history, scheduled_meetings) are created automatically on first use.

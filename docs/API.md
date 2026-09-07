@@ -1,4 +1,4 @@
-# Socket.IO Events Reference
+# Realtime Events Reference
 
 All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 
@@ -10,7 +10,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload** | `{ hostName: string }` |
 | **Emitted by** | Client (HomePage) |
-| **Listened by** | Server (`roomHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `room:created` → `Room` object; `meeting:started` → `{ startedAt }` |
 | **Description** | Creates a new room. Caller becomes host. Generates a 6-character room code. |
 
@@ -19,7 +19,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `Room` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (HomePage) |
 | **Description** | Confirms room creation. Client stores room and navigates to meeting. |
 
@@ -29,7 +29,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload** | `{ code: string, userName: string }` |
 | **Emitted by** | Client (HomePage) |
-| **Listened by** | Server (`roomHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `room:joined` → `Room`; or `waitingRoom:status` → `{ waiting: true }` if locked; or `room:full`; or `error` |
 | **Description** | Joins an existing room by code. If room is locked, user enters waiting room. Max 10 participants. |
 
@@ -38,7 +38,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `Room` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (HomePage, waiting room admit) |
 | **Description** | Confirms successful join. Client transitions to RoomPage. |
 
@@ -48,7 +48,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload** | `{ code: string }` |
 | **Emitted by** | Client (RoomPage handleLeave) |
-| **Listened by** | Server (`roomHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `participant:left` → `{ userId, participants }`; `room:state` → `RoomState` |
 | **Description** | Leaves the room. If host leaves, next participant becomes host. If room empties, room is deleted. |
 
@@ -57,7 +57,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `RoomState` — `{ room: Room, participants: User[] }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Broadcast to all participants when room state changes (join, leave, etc.). |
 
@@ -66,7 +66,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ message: string }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client |
 | **Description** | Room has reached max capacity (10 participants). |
 
@@ -75,7 +75,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | — |
-| **Emitted by** | Server (defined but not currently emitted) |
+| **Emitted by** | Worker (defined but not currently emitted) |
 | **Description** | Reserved for room lock notification. Use `room:toggleLock` / `room:lockChanged` instead. |
 
 ### `room:toggleLock`
@@ -84,7 +84,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ roomId: string }` |
 | **Emitted by** | Client (RoomPage → ControlBar, host only) |
-| **Listened by** | Server (`roomHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `room:lockChanged` → `{ isLocked }` |
 | **Description** | Host toggles whether the room is locked. While locked, new joiners go to the waiting room. |
 
@@ -93,7 +93,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ isLocked: boolean }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Lock state change broadcast to all participants (host syncs `room.isLocked`). |
 
@@ -102,7 +102,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ user: User, participants: User[] }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Broadcast when a new participant joins the room (roster update). Video/media is handled by LiveKit (SFU), not this event. |
 
@@ -111,7 +111,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ userId: string, participants: User[] }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Broadcast when a participant leaves or disconnects (roster update). LiveKit removes the media tracks. |
 
@@ -141,7 +141,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Returns** | `{ token: string, url: string }` (JWT scoped to the room) |
 | **Emitted by** | Client (`useLiveKit`) |
-| **Handled by** | Server (`liveKit.ts`, `livekit-server-sdk`) |
+| **Handled by** | Worker (`src/livekit.ts`, WebCrypto HS256) |
 | **Description** | Issues a short-lived LiveKit access token (publish + subscribe). Requires `LIVEKIT_URL`/`LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET`; returns 503 if unconfigured. Replaces the old per-peer WebRTC `signal` exchange. |
 
 ## Chat Events
@@ -153,15 +153,15 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | **Payload (emit)** | `{ text: string }` |
 | **Payload (receive)** | `ChatMessage` — `{ id, senderId, senderName, text, timestamp }` |
 | **Emitted by** | Client (RoomPage → ChatPanel) |
-| **Listened by** | Server (`chatHandler.ts`); Client (RoomPage) |
-| **Description** | Sends a chat message. Server creates `ChatMessage` with UUID, stores in history, broadcasts to room. |
+| **Listened by** | Worker (HuddleDO); Client (RoomPage) |
+| **Description** | Sends a chat message. Worker creates `ChatMessage` with UUID, stores in history, broadcasts to room. |
 
 ### `chat:history`
 
 | Field | Value |
 |-------|-------|
 | **Payload** | `ChatMessage[]` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Chat history (not currently emitted on join; messages accumulate in memory). |
 
@@ -184,8 +184,8 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | **Payload (emit)** | `{ roomId: string }` |
 | **Payload (receive)** | `{ userId: string, isHandRaised: boolean }` |
 | **Emitted by** | Client (RoomPage) |
-| **Listened by** | Server (`featureHandlers.ts`); Client (RoomPage) |
-| **Description** | Toggles hand raise state. Server broadcasts updated state to room. |
+| **Listened by** | Worker (HuddleDO); Client (RoomPage) |
+| **Description** | Toggles hand raise state. Worker broadcasts updated state to room. |
 
 ### `hand:lower`
 
@@ -205,7 +205,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | **Payload (emit)** | `{ roomId: string }` |
 | **Payload (receive)** | `RecordingState` — `{ isRecording, startedBy, startedAt }` |
 | **Emitted by** | Client (RoomPage, host only) |
-| **Listened by** | Server (`roomHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Description** | Toggles recording state. Only host can toggle. Broadcasts state to room. |
 
 ### `recording:state`
@@ -213,7 +213,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `RecordingState` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Current recording state broadcast to all participants. |
 
@@ -225,7 +225,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ roomId: string, title: string }` |
 | **Emitted by** | Client (RoomPage → MeetingTitle) |
-| **Listened by** | Server (`roomHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Description** | Sets meeting title. Only host can set. Broadcasts update. |
 
 ### `meeting:titleUpdated`
@@ -233,7 +233,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ meetingTitle: string }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Updated meeting title broadcast to all participants. |
 
@@ -245,15 +245,15 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ roomId: string, layout: string }` |
 | **Emitted by** | Client (RoomPage → LayoutToggle) |
-| **Listened by** | Server (`featureHandlers.ts`) |
-| **Description** | Requests layout change (grid/speaker). Server broadcasts to room. |
+| **Listened by** | Worker (HuddleDO) |
+| **Description** | Requests layout change (grid/speaker). Worker broadcasts to room. |
 
 ### `layout:changed`
 
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ layout: string }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Layout change broadcast to all participants. |
 
@@ -265,7 +265,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ roomId: string, settings: Record<string, unknown> }` |
 | **Emitted by** | Client (RoomPage → SettingsPanel) |
-| **Listened by** | Server (`featureHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Description** | Broadcasts settings update to room. Actual media changes happen client-side via `applySettings()`. |
 
 ### `settings:updated`
@@ -273,7 +273,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ settings: Record<string, unknown> }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Settings update broadcast to all participants. |
 
@@ -285,7 +285,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ roomId: string, background: string \| null }` |
 | **Emitted by** | Client (RoomPage → SettingsPanel) |
-| **Listened by** | Server (`featureHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Description** | Sets virtual background. `null` = no background. |
 
 ### `background:updated`
@@ -293,7 +293,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ background: string \| null }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Background update broadcast to room. |
 
@@ -305,7 +305,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ roomId: string }` |
 | **Emitted by** | Client (RoomPage → InviteModal) |
-| **Listened by** | Server (`featureHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `invite:link` → `InviteLink` |
 | **Description** | Requests invite link for current room. |
 
@@ -314,7 +314,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ code: string, url: string }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client |
 | **Description** | Returns room invite URL. |
 
@@ -331,16 +331,16 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | — |
 | **Payload (receive)** | `MeetingSummary` — `{ notes, actionItems, keyTopics, generatedAt }` |
-| **Emitted by** | Server only (previously Client AICompanion) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
-| **Description** | Generates meeting summary from chat history. Server does word-frequency analysis and action item extraction. |
+| **Emitted by** | Worker only (previously Client AICompanion) |
+| **Listened by** | Worker (HuddleDO) |
+| **Description** | Generates meeting summary from chat history. Worker does word-frequency analysis and action item extraction. |
 
 ### `ai:summaryReady`
 
 | Field | Value |
 |-------|-------|
 | **Payload** | `MeetingSummary` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (unused — no UI listener) |
 | **Description** | Generated summary delivered to requesting client. |
 
@@ -350,8 +350,8 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ text: string }` |
 | **Payload (receive)** | `MeetingNote` — `{ id, text, timestamp, author }` |
-| **Emitted by** | Server only (previously Client AICompanion) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
+| **Emitted by** | Worker only (previously Client AICompanion) |
+| **Listened by** | Worker (HuddleDO) |
 | **Description** | Adds a meeting note. Broadcast to room. |
 
 ### `ai:noteAdded`
@@ -359,7 +359,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `MeetingNote` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (unused — no UI listener) |
 | **Description** | New note broadcast to all participants. |
 
@@ -369,8 +369,8 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ text: string, assignee: string \| null }` |
 | **Payload (receive)** | `ActionItem` — `{ id, text, assignee, done }` |
-| **Emitted by** | Server only (previously Client AICompanion) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
+| **Emitted by** | Worker only (previously Client AICompanion) |
+| **Listened by** | Worker (HuddleDO) |
 | **Description** | Adds an action item. Broadcast to room. |
 
 ### `ai:actionItemUpdated`
@@ -378,7 +378,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `ActionItem` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (unused — no UI listener) |
 | **Description** | New action item broadcast to all participants. |
 
@@ -391,15 +391,15 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | **Payload (emit)** | `{ type: string }` — one of the `ReactionType` values |
 | **Payload (receive)** | `Reaction` — `{ id, userId, userName, type, timestamp }` |
 | **Emitted by** | Client (RoomPage → ReactionBar) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
-| **Description** | Sends an emoji reaction. Server creates `Reaction` and broadcasts. |
+| **Listened by** | Worker (HuddleDO) |
+| **Description** | Sends an emoji reaction. Worker creates `Reaction` and broadcasts. |
 
 ### `reaction:broadcast`
 
 | Field | Value |
 |-------|-------|
 | **Payload** | `Reaction` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Reaction broadcast to all participants for floating animation display. |
 
@@ -411,7 +411,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ question: string, options: string[] }` |
 | **Emitted by** | Client (PollModal) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `poll:update` → `Poll` |
 | **Description** | Creates a new poll. Max 6 options (`POLL_MAX_OPTIONS`). |
 
@@ -420,7 +420,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `Poll` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (PollModal) |
 | **Description** | Active poll broadcast to room. |
 
@@ -430,7 +430,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ pollId: string, optionId: string }` |
 | **Emitted by** | Client (PollModal) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `poll:result` → `Poll` |
 | **Description** | Casts a vote. Removes previous vote from other options (one vote per user per poll). |
 
@@ -440,7 +440,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ pollId: string }` |
 | **Emitted by** | Client (PollModal, poll creator only) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `poll:result` → `Poll` |
 | **Description** | Closes poll. Only the poll creator can close. |
 
@@ -449,7 +449,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `Poll` (with `isActive: false` when closed) |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (PollModal) |
 | **Description** | Updated poll with votes or closed state. |
 
@@ -462,7 +462,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | **Payload (emit)** | `{ text: string, isFinal: boolean }` |
 | **Payload (receive)** | `CaptionSegment` — `{ id, userId, userName, text, timestamp, isFinal }` |
 | **Emitted by** | Client (LiveCaptions via Web Speech API) |
-| **Listened by** | Server (`meetingHandlers.ts`); Client (RoomPage) |
+| **Listened by** | Worker (HuddleDO); Client (RoomPage) |
 | **Description** | Speech-to-text segment. Non-final segments are echoed only to sender. Final segments are broadcast to room. |
 
 ### `caption:toggle`
@@ -471,7 +471,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload** | — |
 | **Emitted by** | Client (LiveCaptions) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `captions:enabled` → `{ enabled: true }` |
 | **Description** | Enables live captions for the room. |
 
@@ -480,7 +480,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ enabled: boolean }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Notifies room that captions are enabled. |
 
@@ -499,7 +499,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ waiting: boolean }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Tells the joining client they are in the waiting room. Client shows waiting screen. |
 
@@ -508,7 +508,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `WaitingUser[]` — `{ socketId, name, requestedAt }[]` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage → WaitingRoom) |
 | **Description** | Updated waiting room list for host (full `WaitingUser` objects, not raw socket IDs). |
 
@@ -518,7 +518,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ socketId: string }` |
 | **Emitted by** | Client (RoomPage → WaitingRoom, host only) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `room:joined` → `Room` (to admitted user); `participant:joined` + `room:state` (to room) |
 | **Description** | Host admits a user from waiting room. User becomes a full participant. |
 
@@ -528,7 +528,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload (emit)** | `{ socketId: string }` |
 | **Emitted by** | Client (RoomPage → WaitingRoom, host only) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | Error message to rejected user; `waitingRoom:update` to room |
 | **Description** | Host rejects a user from waiting room. |
 
@@ -540,7 +540,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 |-------|-------|
 | **Payload** | — |
 | **Emitted by** | Client (RoomPage, host only) |
-| **Listened by** | Server (`meetingHandlers.ts`) |
+| **Listened by** | Worker (HuddleDO) |
 | **Response** | `meeting:ended` → `{ roomId, code }` to all participants |
 | **Description** | Host ends meeting for all participants. Cleans up polls. |
 
@@ -549,7 +549,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ roomId: string, code: string }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client (RoomPage) |
 | **Description** | Meeting ended notification. Client shows "Meeting Has Ended" screen. |
 
@@ -558,7 +558,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ startedAt: number }` |
-| **Emitted by** | Server (on room create) |
+| **Emitted by** | Worker (on room create) |
 | **Listened by** | Client (RoomPage → MeetingTimer) |
 | **Description** | Meeting start timestamp for timer display. |
 
@@ -569,7 +569,7 @@ All event names are defined in `SOCKET_EVENTS` from `@meet-app/shared`.
 | Field | Value |
 |-------|-------|
 | **Payload** | `{ message: string }` |
-| **Emitted by** | Server |
+| **Emitted by** | Worker |
 | **Listened by** | Client |
 | **Description** | Generic error response. Used for permission violations, not found, rejected, etc. |
 

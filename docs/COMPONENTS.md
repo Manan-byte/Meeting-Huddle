@@ -4,7 +4,7 @@
 
 ```
 <App>
-  └─ <SocketProvider>                      // Socket.IO connection
+  └─ <SocketProvider>                      // WebSocket (Worker /ws)
        └─ <RoomProvider>                    // Room state management
             │
             ├── <HomePage>                  // SaaS dashboard
@@ -66,13 +66,13 @@
 
 ```typescript
 interface SocketContextValue {
-  socket: Socket | null;      // Socket.IO client instance
+  socket: Socket | null;      // WebSocket adapter (WsSocket) instance
   isConnected: boolean;       // Connection status
 }
 ```
 
 - Creates `socket.io-client` connection on mount using WebSocket with polling fallback.
-- Auto-connects to same origin (Vite proxy to server on port 3001).
+- Auto-connects to same origin (/ws on the Worker; Vite proxies to wrangler dev in local dev).
 - Cleans up socket on unmount.
 - Exported hook: `useSocket()`.
 
@@ -154,7 +154,7 @@ Also exports **`buildInviteMailto(invitees, meeting, clientUrl)`** → a `mailto
 
 **`TimePicker` behavior**: Digital clock-style selector with three columns — **Hour** (1–12), **Minute** (5-min steps 00–55), and **Period** (AM/PM). The selected option in each column is filled with the accent color. Emits 24-hour `HH:MM`.
 
-**Contract note**: both emit the same string formats the server's `dash:schedule` handler expects (`date: "YYYY-MM-DD"`, `time: "HH:MM"`), so the socket contract is unchanged.
+**Contract note**: both emit the same string formats the Worker's `dash:schedule` handler expects (`date: "YYYY-MM-DD"`, `time: "HH:MM"`), so the socket contract is unchanged.
 
 ### `RoomPage` (`pages/RoomPage.tsx`)
 | Prop | Type |
@@ -438,7 +438,7 @@ function usePushToTalk({ enabled, hotkey, setMute, onMuteChange }: UsePushToTalk
 ## State Management Flow
 
 ```
-Socket.IO Events ──► RoomPage ──► RoomContext ──► Components
+WebSocket Events ──► RoomPage ──► RoomContext ──► Components
                           │
                           ├──► Local useState (UI state)
                           │
