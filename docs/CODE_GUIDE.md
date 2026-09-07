@@ -78,8 +78,9 @@ Fungsi `fetch(request, env)` routing semua request:
 2. `/health` → `{"ok":true}` (probe uptime).
 3. `/api/livekit/token?room=&name=` → terbitkan JWT video (lihat `livekit.ts`).
 4. `/auth/github/callback` → alur OAuth GitHub (lihat `githubOAuth.ts`).
-5. `/ws` → upgrade WebSocket ke Durable Object `HuddleDO` (satu global).
-6. lainnya → `env.ASSETS.fetch` (serve frontend build).
+5. `/auth/google/callback` → alur OAuth Google/Gmail (lihat `googleOAuth.ts`).
+6. `/ws` → upgrade WebSocket ke Durable Object `HuddleDO` (satu global).
+7. lainnya → `env.ASSETS.fetch` (serve frontend build).
 
 ### `src/huddleDO.ts` — Durable Object (inti realtime)
 Objek persist yang **memiliki**:
@@ -117,6 +118,12 @@ LiveKit + publish/subscribe. Menggantikan `livekit-server-sdk` (tak jalan di edg
 ### `src/githubOAuth.ts` — login GitHub
 Callback OAuth: tukar `code` → access token GitHub → ambil profil + email →
 find-or-create user di D1 → set session → redirect ke `CLIENT_URL/?auth_token=...`.
+
+### `src/googleOAuth.ts` — "Sign in with Google" (Gmail)
+Callback OAuth Google: tukar `code` → access token (endpoint token Google) →
+ambil profil (id/name/email via `/oauth2/v2/userinfo`) → find-or-create user di D1
+(dengan `google_id`) → set session → redirect ke `CLIENT_URL/?auth_token=...`.
+Butuh secret `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` + var `CLIENT_URL`.
 
 ---
 

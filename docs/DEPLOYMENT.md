@@ -77,6 +77,8 @@ Secret yang didukung:
 | `LIVEKIT_API_SECRET` | Ya (untuk video) | LiveKit API secret (LiveKit Cloud → project → API keys) |
 | `GITHUB_CLIENT_ID` | Opsional | GitHub OAuth app client id |
 | `GITHUB_CLIENT_SECRET` | Opsional | GitHub OAuth app client secret |
+| `GOOGLE_CLIENT_ID` | Opsional | Google OAuth client id ("Sign in with Google") |
+| `GOOGLE_CLIENT_SECRET` | Opsional | Google OAuth client secret |
 
 ### 3. Vars (non-secret, di `wrangler.toml` `[vars]`)
 
@@ -91,7 +93,7 @@ CLIENT_URL = "https://<worker>.workers.dev"
 |-----|--------|-----------|
 | `LIVEKIT_URL` | Ya (video) | LiveKit server URL |
 | `LIVEKIT_API_KEY` | Ya (video) | LiveKit API key |
-| `CLIENT_URL` | Opsional | Base URL untuk invite links & GitHub OAuth callback; default folder |
+| `CLIENT_URL` | Opsional | Base URL untuk invite links & OAuth callback (GitHub/Google); default folder |
 
 ## Build & Deploy
 
@@ -117,6 +119,7 @@ Buka URL tersebut. Worker menyajikan **semuanya** di satu origin:
 - `GET /health` → `{"ok":true}`
 - `GET /api/livekit/token?room=&name=` → JWT LiveKit
 - `GET /auth/github/callback` → GitHub OAuth callback
+- `GET /auth/google/callback` → Google OAuth callback
 - `GET /ws` → WebSocket realtime (Durable Object)
 
 ## Env untuk GitHub OAuth (opsional)
@@ -128,6 +131,24 @@ Buka URL tersebut. Worker menyajikan **semuanya** di satu origin:
 3. Set `CLIENT_URL=https://<worker>.workers.dev` di `[vars]`.
 
 Tanpa konfigurasi ini, tombol GitHub di sign-in menampilkan toast "belum dikonfigurasi".
+
+## Env untuk Google OAuth / "Sign in with Google" (opsional)
+
+1. Buka **https://console.cloud.google.com/apis/credentials** → **Create Credentials →
+   OAuth client ID → Web application**.
+   - **Authorized redirect URIs**: `https://<worker>.workers.dev/auth/google/callback`
+2. Set `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` sebagai secrets worker.
+3. Set `CLIENT_URL=https://<worker>.workers.dev` di `[vars]`.
+4. Buat `apps/web/.env` (gitignored):
+   ```
+   VITE_GOOGLE_CLIENT_ID=<client_id>
+   ```
+   lalu `pnpm --filter @meet-app/web build` + `npx wrangler deploy` — sehingga tombol
+   "Continue with Google" ter-bundle dengan client id.
+
+Tanpa langkah 4, tombol tetap tampil tapi menampilkan toast "belum dikonfigurasi".
+Tanpa step 1–3, callback `/auth/google/callback` menampilkan error "Google OAuth is not
+configured".
 
 ## Custom Domain (opsional, permanen)
 

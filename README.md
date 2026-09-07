@@ -10,7 +10,7 @@
 **Huddle** adalah aplikasi **video conference berbasis browser** ala Google Meet/Zoom. Pengguna
 bisa membuat/bergabung meeting dengan kode 6 karakter, berbagi layar, chat, polling, mengangkat
 tangan, menjadwalkan meeting (dengan undangan email via mail client sendiri), dan login via
-email/password atau GitHub.
+Google (Gmail), GitHub, atau email/password.
 
 Tidak ada unduhan/instalasi — cukup browser (WebRTC).
 
@@ -23,7 +23,7 @@ Tidak ada unduhan/instalasi — cukup browser (WebRTC).
 | 💬 **Chat & reaksi** | Chat realtime, emoji reactions |
 | 🙋 **Engage** | Angkat tangan, polling, live captions (Web Speech API), push-to-talk |
 | 📅 **Schedule** | Kalender + jam digital AM/PM, undang tamu via `mailto:` (provider email apa pun) |
-| 🔐 **Auth** | Email/password atau GitHub OAuth; **Schedule & History (admin)** gated login |
+| 🔐 **Auth** | Google (Gmail), GitHub, atau email/password; **Schedule & History (admin)** gated login |
 | 🗄️ **Data** | Cloudflare D1 (serverless SQLite) — users, sesi, history, jadwal |
 | 🎨 **UI** | Light SaaS, dark-mode, layout grid/speaker/sidebar, pre-join lobby |
 
@@ -36,7 +36,7 @@ Tidak ada unduhan/instalasi — cukup browser (WebRTC).
 │  useLiveKit     │        │  • HuddleDO (Durable Object)         │        │ history/sched│
 └────────┬────────┘        │    - WebSocket realtime (rooms, chat,│        └──────────────┘
          │ publish/        │      polls, reactions, signaling)    │
-         │ subscribe       │    - Auth (email/GitHub)             │
+         │ subscribe       │    - Auth (Google/GitHub/email)      │
          ▼                 │    - LiveKit token (HS256 JWT)       │
 ┌─────────────────┐        │    - Serve frontend (static assets)  │
 │   LiveKit SFU   │◀───────┘                                      │
@@ -67,8 +67,13 @@ cd apps/worker
 npx wrangler secret put LIVEKIT_API_SECRET
 npx wrangler secret put GITHUB_CLIENT_ID      # opsional, untuk GitHub OAuth
 npx wrangler secret put GITHUB_CLIENT_SECRET  # opsional
+npx wrangler secret put GOOGLE_CLIENT_ID      # opsional, untuk "Sign in with Google"
+npx wrangler secret put GOOGLE_CLIENT_SECRET  # opsional
 #    Vars (non-secret, di wrangler.toml [vars] atau dashboard):
 #    LIVEKIT_URL, LIVEKIT_API_KEY, CLIENT_URL
+
+#    Web (.env, gitignored): aktifkan tombol Google di UI
+echo "VITE_GOOGLE_CLIENT_ID=<client_id>" > apps/web/.env
 
 # 3. Build & deploy ke Cloudflare
 pnpm --filter @meet-app/web build      # frontend → apps/web/dist

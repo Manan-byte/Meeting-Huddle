@@ -120,6 +120,7 @@ export function ParticleField({ className }: ParticleFieldProps) {
       fragmentShader: `
         uniform vec3 uColor;
         uniform float uOpacity;
+        uniform float uTime;
         varying float vPhase;
         void main() {
           float d = length(gl_PointCoord - vec2(0.5));

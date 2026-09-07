@@ -28,3 +28,4 @@ new_sqlite_classes = ["HuddleDO"]
 [vars]
 LIVEKIT_URL = "wss://huddler-xonlpeio.livekit.cloud"
 LIVEKIT_API_KEY = "APICLqCAoWYafBz"
+CLIENT_URL = "https://huddle.abdmanan513.workers.dev"
