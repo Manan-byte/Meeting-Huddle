@@ -13,7 +13,7 @@ services:
   - type: web
     name: huddle
     runtime: docker
-    repo: https://github.com/<your-github-username>/meet-app
+    repo: https://github.com/Manan-byte/Meeting-Huddle
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
