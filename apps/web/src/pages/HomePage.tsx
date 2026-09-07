@@ -30,6 +30,7 @@ import {
   Lock,
   X,
   CalendarDays,
+  User as UserIcon,
 } from "lucide-react";
 import { SOCKET_EVENTS } from "@meet-app/shared";
 import type { Room, User } from "@meet-app/shared";
@@ -107,14 +108,15 @@ function formatSchedTime(hhmm: string): string {
 export function HomePage({ onJoinRoom }: HomePageProps) {
   const { socket } = useSocket();
   const { setRoom, setCurrentUser, setParticipants } = useRoom();
-  const { user, loading: authLoading, login, logout } = useAuth();
+  const { user, loading: authLoading, login, register, logout } = useAuth();
 
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledMeeting[]>([]);
   const [showAuth, setShowAuth] = useState(false);
-  const [authMode, setAuthMode] = useState<"choose" | "email">("choose");
+  const [authMode, setAuthMode] = useState<"choose" | "email" | "register">("choose");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
+  const [authName, setAuthName] = useState("");
   const [authError, setAuthError] = useState("");
   const [schedTitle, setSchedTitle] = useState("");
   const [schedDate, setSchedDate] = useState("");
@@ -423,6 +425,31 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
               </div>
             </section>
 
+            {/* How it works — 3 steps */}
+            <section className="dash-card" style={styles.howSection}>
+              <div style={styles.howHeader}>
+                <span style={styles.featureEyebrow}>How it works</span>
+                <h2 style={styles.howTitle}>Start a meeting in seconds</h2>
+              </div>
+              <div style={styles.howSteps}>
+                <div style={styles.howStep}>
+                  <span style={styles.howStepNum}>1</span>
+                  <h3 style={styles.howStepTitle}>Enter your name</h3>
+                  <p style={styles.howStepDesc}>No account needed to join — just type your name and go.</p>
+                </div>
+                <div style={styles.howStep}>
+                  <span style={styles.howStepNum}>2</span>
+                  <h3 style={styles.howStepTitle}>Create or join</h3>
+                  <p style={styles.howStepDesc}>Start a new meeting or enter a 6-character code from an invite.</p>
+                </div>
+                <div style={styles.howStep}>
+                  <span style={styles.howStepNum}>3</span>
+                  <h3 style={styles.howStepTitle}>Share the code</h3>
+                  <p style={styles.howStepDesc}>Send the code to others — video, audio, and chat run instantly in the browser.</p>
+                </div>
+              </div>
+            </section>
+
             {/* Recent meetings — admin only */}
             {isAdmin && (
               <section className="dash-card" style={styles.tableCard}>
@@ -640,7 +667,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
         <footer className="hp-footer">
           <span className="hp-footer-mark">Huddle</span>
           <span className="hp-footer-line">
-            Built with <span>WebRTC</span> &middot; <span>Socket.IO</span> &middot; <span>React</span> — free video meetings, right in your browser.
+            Powered by <span>LiveKit SFU</span> &middot; <span>Cloudflare Workers</span> &middot; <span>React</span> — free video meetings for up to 10 participants per room, right in your browser.
           </span>
         </footer>
       </main>
@@ -695,33 +722,79 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                   Continue with email
                 </button>
 
-                <div style={styles.authDivider}><span style={styles.authDividerText}>or</span></div>
+                {/* "or" divider — centered with rules on both sides */}
+                <div style={styles.authDivider}>
+                  <span style={styles.authDividerLine} />
+                  <span style={styles.authDividerText}>or</span>
+                  <span style={styles.authDividerLine} />
+                </div>
 
                 <p style={styles.authAlt}>
                   New to Huddle?{" "}
-                  <button style={styles.authAltLink} onClick={() => {
-                    const cid = import.meta.env.VITE_GITHUB_CLIENT_ID;
-                    if (cid) {
-                      const redirect = encodeURIComponent(`${window.location.origin}/auth/github/callback`);
-                      window.location.href =
-                        `https://github.com/login/oauth/authorize?client_id=${cid}&redirect_uri=${redirect}&scope=user:email`;
-                    } else {
-                      showToast("GitHub sign-up belum dikonfigurasi (VITE_GITHUB_CLIENT_ID).");
-                    }
-                  }}>
-                    Sign up with GitHub
+                  <button style={styles.authAltLink} onClick={() => { setAuthMode("register"); setAuthError(""); }}>
+                    Sign up with email
                   </button>
                 </p>
               </>
-            ) : (
+            ) : authMode === "register" ? (
               <>
-                {/* Email + password */}
+                {/* Email + name + password register */}
                 <button
                   style={styles.authBack}
                   onClick={() => { setAuthMode("choose"); setAuthError(""); }}
                 >
                   ← Back
                 </button>
+                <div style={styles.authField}>
+                  <UserIcon size={16} style={styles.authFieldIcon} />
+                  <input
+                    style={styles.authInput}
+                    type="text"
+                    placeholder="Name"
+                    value={authName}
+                    onChange={(e) => setAuthName(e.target.value)}
+                  />
+                </div>
+                <div style={styles.authField}>
+                  <Mail size={16} style={styles.authFieldIcon} />
+                  <input
+                    style={styles.authInput}
+                    type="email"
+                    placeholder="Email"
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                  />
+                </div>
+                <div style={styles.authField}>
+                  <Lock size={16} style={styles.authFieldIcon} />
+                  <input
+                    style={styles.authInput}
+                    type="password"
+                    placeholder="Password (min 6 chars)"
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                  />
+                </div>
+
+                {authError && <div style={styles.authError}>{authError}</div>}
+
+                <button
+                  className="dash-primary" style={styles.authSubmit}
+                  onClick={async () => {
+                    const err = await register(authName, authEmail, authPassword);
+                    if (err) setAuthError(err);
+                    else {
+                      setShowAuth(false); setAuthMode("choose"); setAuthError(""); setAuthName(""); setAuthEmail(""); setAuthPassword("");
+                      showToast("Account created — signed in.");
+                    }
+                  }}
+                >
+                  <Plus size={16} /> Create account
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Email + password login */}
                 <div style={styles.authField}>
                   <Mail size={16} style={styles.authFieldIcon} />
                   <input
@@ -1231,6 +1304,62 @@ heroRight: {
     color: "var(--text-muted)",
     lineHeight: 1.6,
   },
+  howSection: {
+    marginTop: 24,
+    padding: "44px 40px",
+    borderRadius: "var(--radius-2xl)",
+  },
+  howHeader: {
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  howTitle: {
+    fontSize: 28,
+    fontWeight: 800,
+    color: "var(--text)",
+    letterSpacing: "-0.03em",
+    margin: 0,
+    fontFamily: "var(--font-display)",
+  },
+  howSteps: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 18,
+  },
+  howStep: {
+    textAlign: "center",
+    padding: "8px 12px",
+  },
+  howStepNum: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 34,
+    height: 34,
+    borderRadius: "50%",
+    background: "var(--accent)",
+    color: "var(--accent-ink)",
+    fontSize: 15,
+    fontWeight: 800,
+    marginBottom: 12,
+    fontFamily: "var(--font-display)",
+  },
+  howStepTitle: {
+    margin: 0,
+    fontSize: 16,
+    fontWeight: 700,
+    color: "var(--text)",
+    marginBottom: 6,
+  },
+  howStepDesc: {
+    margin: 0,
+    fontSize: 13.5,
+    lineHeight: 1.55,
+    color: "var(--text-muted)",
+    maxWidth: 260,
+    marginLeft: "auto",
+    marginRight: "auto",
+  },
   tableCard: {
     background: "var(--bg-card)",
     border: "1px solid var(--border)",
@@ -1550,6 +1679,12 @@ heroRight: {
     color: "var(--text-dim)",
     fontSize: 12,
     margin: "4px 0",
+    width: "100%",
+  },
+  authDividerLine: {
+    flex: 1,
+    height: 1,
+    background: "var(--border)",
   },
   authDividerText: { whiteSpace: "nowrap" },
   authField: {
