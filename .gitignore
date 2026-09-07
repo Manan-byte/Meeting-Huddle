@@ -28,6 +28,7 @@ Thumbs.db
 
 # ForgeGuard local cache
 .forgeguard/
+render-env.txt
 
 # Turbo build cache
 .turbo/
