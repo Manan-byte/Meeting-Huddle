@@ -1,5 +1,5 @@
 /**
- * @file Home page — landing + dashboard (Zoom/Google Meet-style).
+ * @file Home page â€” landing + dashboard (Zoom/Google Meet-style).
  *
  * Layout (clean top nav + hero):
  *   - Top nav: Huddle brand, page links (Dashboard/Schedule/History), Sign in.
@@ -89,13 +89,13 @@ function formatHistoryTime(ts: number): string {
   return new Date(ts).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-/** "YYYY-MM-DD" → friendly label (e.g. "Sat, Sep 20, 2026"). */
+/** "YYYY-MM-DD" â†’ friendly label (e.g. "Sat, Sep 20, 2026"). */
 function formatSchedDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
 
-/** "HH:MM" (24h) → "h:mm AM/PM". */
+/** "HH:MM" (24h) â†’ "h:mm AM/PM". */
 function formatSchedTime(hhmm: string): string {
   const [h = 0, m = 0] = hhmm.split(":").map(Number);
   const ampm = h >= 12 ? "PM" : "AM";
@@ -263,14 +263,14 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
     : "History";
 
   const features = [
-    { icon: Monitor, title: "HD video & screen share", desc: "SFU-powered crystal-clear video with one-click screen sharing — scales to many participants." },
+    { icon: Monitor, title: "HD video & screen share", desc: "SFU-powered crystal-clear video with one-click screen sharing â€” scales to many participants." },
     { icon: Mic, title: "Clear audio", desc: "Noise suppression, live speaking indicators, and push-to-talk." },
     { icon: MessagesSquare, title: "Chat, polls & reactions", desc: "Real-time chat, polls, hand raise, emoji reactions, and live captions." },
   ];
 
   return (
     <div style={styles.page}>
-      {/* ── Top nav ─────────────────────────────────────────────── */}
+      {/* â”€â”€ Top nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <header style={styles.nav}>
         <button style={styles.brand} onClick={() => goTo("dashboard")}>
           <span style={styles.brandIcon}><Video size={17} color="var(--accent-ink)" /></span>
@@ -308,14 +308,14 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
       </header>
 
       <main style={styles.main}>
-        {/* ── Dashboard / Landing hero ───────────────────────────── */}
+        {/* â”€â”€ Dashboard / Landing hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {activeView === "dashboard" && (
           <>
             <section style={styles.hero}>
               <div style={styles.heroLeft}>
                 <h1 style={styles.heroTitle}>{viewTitle}</h1>
                 <p style={styles.heroSubtitle}>
-                  Free, browser-based video meetings — powered by Cloudflare edge infrastructure.
+                  Free, browser-based video meetings â€” powered by Cloudflare edge infrastructure.
                   Share screens, chat, poll, and record in real time with no install.
                 </p>
 
@@ -403,7 +403,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
               })}
             </section>
 
-            {/* Recent meetings — admin only */}
+            {/* Recent meetings â€” admin only */}
             {isAdmin && (
               <section className="dash-card" style={styles.tableCard}>
                 <div style={styles.cardHeader}>
@@ -412,8 +412,8 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                 </div>
                 {history.length === 0 ? (
                   <div style={styles.emptyState}>
-                    <span style={styles.emptyIcon}>🕓</span>
-                    <p style={styles.emptyText}>No past meetings yet — start or join one to see it here.</p>
+                    <span style={styles.emptyIcon}>ðŸ•“</span>
+                    <p style={styles.emptyText}>No past meetings yet â€” start or join one to see it here.</p>
                   </div>
                 ) : (
                   <table style={styles.table}>
@@ -442,7 +442,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
           </>
         )}
 
-        {/* ── Schedule — requires sign-in ───────────────────────── */}
+        {/* â”€â”€ Schedule â€” requires sign-in â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {activeView === "schedule" && (
           <div style={styles.view}>
             {!user ? (
@@ -450,7 +450,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                 <h2 style={styles.viewTitle}>Schedule a meeting</h2>
                 <p style={styles.viewDesc}>
                   Sign in to schedule meetings and invite guests by email. Invites are
-                  composed in your own mail client (Gmail, Yahoo, Outlook, …) — no account
+                  composed in your own mail client (Gmail, Yahoo, Outlook, â€¦) â€” no account
                   setup needed.
                 </p>
                 <div style={styles.authPrompt}>
@@ -466,7 +466,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
               <>
                 <div className="dash-card" style={styles.viewCard}>
               <h2 style={styles.viewTitle}>Schedule a meeting</h2>
-              <p style={styles.viewDesc}>Plan an upcoming meeting — a room code is generated for it.</p>
+              <p style={styles.viewDesc}>Plan an upcoming meeting â€” a room code is generated for it.</p>
               <div style={styles.heroForm}>
                 <input style={styles.plainInput} type="text" placeholder="Meeting title" value={schedTitle} onChange={(e) => setSchedTitle(e.target.value)} />
               </div>
@@ -487,7 +487,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
               <div style={styles.schedSummary}>
                 <CalendarDays size={15} style={styles.schedSummaryIcon} />
                 <span style={styles.schedSummaryText}>
-                  {schedDate ? formatSchedDate(schedDate) : "Pilih tanggal"} · {schedTime ? formatSchedTime(schedTime) : "pilih jam"}
+                  {schedDate ? formatSchedDate(schedDate) : "Pilih tanggal"} Â· {schedTime ? formatSchedTime(schedTime) : "pilih jam"}
                 </span>
               </div>
 
@@ -506,7 +506,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                 <div
                   style={{
                     ...styles.emailNote,
-                    background: emailMsg.type === "warn" ? "rgba(245,158,11,0.12)" : "rgba(155,234,92,0.15)",
+                    background: emailMsg.type === "warn" ? "rgba(245,158,11,0.12)" : "rgba(79, 70, 229,0.15)",
                     color: emailMsg.type === "warn" ? "var(--text)" : "var(--accent-dark)",
                   }}
                 >
@@ -528,7 +528,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                       setScheduled((prev) => [...prev, res.meeting!]);
                       setSchedTitle(""); setSchedDate(""); setSchedTime(""); setSchedInvitees("");
                       if (invitees.length) {
-                        // Open the user's own mail client (Gmail/Yahoo/Outlook — any
+                        // Open the user's own mail client (Gmail/Yahoo/Outlook â€” any
                         // provider) with a pre-filled invite. No SMTP config needed.
                         const mailto = buildInviteMailto(
                           invitees,
@@ -538,12 +538,12 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                         window.location.href = mailto;
                         setEmailMsg({
                           type: "info",
-                          text: `✅ Rapat dijadwalkan — aplikasi email Anda terbuka untuk mengirim undangan ke ${invitees.length} tamu (${invitees.join(", ")}).`,
+                          text: `âœ… Rapat dijadwalkan â€” aplikasi email Anda terbuka untuk mengirim undangan ke ${invitees.length} tamu (${invitees.join(", ")}).`,
                         });
                       } else {
                         setEmailMsg(null);
                       }
-                      showToast(`Scheduled "${res.meeting.title}" — code ${res.meeting.code}`);
+                      showToast(`Scheduled "${res.meeting.title}" â€” code ${res.meeting.code}`);
                     } else showToast(res.error ?? "Could not schedule.");
                   });
                 }}
@@ -554,7 +554,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
             <div className="dash-card" style={styles.viewCard}>
               <h2 style={styles.viewTitle}>Upcoming meetings</h2>
               {scheduled.length === 0 ? (
-                <div style={styles.emptyState}><span style={styles.emptyIcon}>🗓</span><p style={styles.emptyText}>No upcoming meetings scheduled yet.</p></div>
+                <div style={styles.emptyState}><span style={styles.emptyIcon}>ðŸ—“</span><p style={styles.emptyText}>No upcoming meetings scheduled yet.</p></div>
               ) : (
                 <table style={styles.table}>
                   <thead><tr><th style={styles.th}>Title</th><th style={styles.th}>Code</th><th style={styles.th}>Date</th><th style={styles.th}>Time</th><th style={styles.th}>Invited</th><th style={styles.th}></th></tr></thead>
@@ -573,7 +573,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                               ))}
                             </span>
                           ) : (
-                            <span style={styles.tdMuted}>—</span>
+                            <span style={styles.tdMuted}>â€”</span>
                           )}
                         </td>
                         <td style={styles.td}>
@@ -590,14 +590,14 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
           </div>
         )}
 
-        {/* ── History — admin only ───────────────────────────────── */}
+        {/* â”€â”€ History â€” admin only â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {isAdmin && activeView === "history" && (
           <div style={styles.view}>
             <div className="dash-card" style={styles.viewCard}>
               <h2 style={styles.viewTitle}>History</h2>
-              <p style={styles.viewDesc}>Meeting records — admin only.</p>
+              <p style={styles.viewDesc}>Meeting records â€” admin only.</p>
               {history.length === 0 ? (
-                <div style={styles.emptyState}><span style={styles.emptyIcon}>🕓</span><p style={styles.emptyText}>No past meetings yet.</p></div>
+                <div style={styles.emptyState}><span style={styles.emptyIcon}>ðŸ•“</span><p style={styles.emptyText}>No past meetings yet.</p></div>
               ) : (
                 <table style={styles.table}>
                   <thead><tr><th style={styles.th}>Title</th><th style={styles.th}>Code</th><th style={styles.th}>Participants</th><th style={styles.th}>Time</th></tr></thead>
@@ -629,7 +629,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
       {/* Toast */}
       {toast && <div style={styles.toast}>{toast}</div>}
 
-      {/* Auth modal — sign in with email or GitHub (no manual registration) */}
+      {/* Auth modal â€” sign in with email or GitHub (no manual registration) */}
       {showAuth && (
         <div style={styles.authOverlay} onClick={() => setShowAuth(false)}>
           <div style={styles.authModal} onClick={(e) => e.stopPropagation()}>
@@ -699,7 +699,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                   style={styles.authBack}
                   onClick={() => { setAuthMode("choose"); setAuthError(""); }}
                 >
-                  ← Back
+                  â† Back
                 </button>
                 <div style={styles.authField}>
                   <Mail size={16} style={styles.authFieldIcon} />
@@ -766,7 +766,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Styles — Zoom/Meet-style light landing                            */
+/*  Styles â€” Zoom/Meet-style light landing                            */
 /* ------------------------------------------------------------------ */
 
 const styles: Record<string, React.CSSProperties> = {
@@ -831,7 +831,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   navLinkActive: {
-    background: "rgba(155,234,92,0.18)",
+    background: "rgba(79, 70, 229,0.18)",
     color: "var(--accent-dark)",
     fontWeight: 600,
   },
@@ -1006,7 +1006,7 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "1fr 1fr",
     gap: 12,
     background:
-      "radial-gradient(ellipse 80% 80% at 50% 20%, rgba(155,234,92,0.14) 0%, transparent 60%), var(--bg-soft)",
+      "radial-gradient(ellipse 80% 80% at 50% 20%, rgba(79, 70, 229,0.14) 0%, transparent 60%), var(--bg-soft)",
     borderRadius: 20,
     padding: 20,
     border: "1px solid var(--border)",
@@ -1063,7 +1063,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 40,
     height: 40,
     borderRadius: 12,
-    background: "rgba(155,234,92,0.2)",
+    background: "rgba(79, 70, 229,0.2)",
     color: "var(--accent-dark)",
     marginBottom: 12,
   },
@@ -1149,7 +1149,7 @@ const styles: Record<string, React.CSSProperties> = {
   invitedChip: {
     padding: "2px 8px",
     borderRadius: 999,
-    background: "rgba(155,234,92,0.18)",
+    background: "rgba(79, 70, 229,0.18)",
     color: "var(--accent-dark)",
     fontSize: 11,
     fontWeight: 600,
@@ -1219,8 +1219,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     padding: "10px 14px",
     borderRadius: 10,
-    background: "rgba(155,234,92,0.12)",
-    border: "1px solid rgba(155,234,92,0.35)",
+    background: "rgba(79, 70, 229,0.12)",
+    border: "1px solid rgba(79, 70, 229,0.35)",
     color: "var(--accent-dark)",
     fontSize: 13,
     fontWeight: 600,

@@ -1,5 +1,5 @@
 /**
- * @file ParticipantList — displays all room participants with status indicators.
+ * @file ParticipantList â€” displays all room participants with status indicators.
  *
  * Shows each participant's avatar (initials), name, and status badges:
  *   - "(You)" label for the local user
@@ -212,7 +212,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: 36,
     borderRadius: "50%",
     background:
-      "radial-gradient(circle at 30% 20%, rgba(155,234,92,0.35) 0%, transparent 60%), linear-gradient(135deg, #eef7e2 0%, #d9f2bd 100%)",
+      "radial-gradient(circle at 30% 20%, rgba(79, 70, 229,0.35) 0%, transparent 60%), linear-gradient(135deg, #eef7e2 0%, #d9f2bd 100%)",
     color: "var(--accent-dark)",
     display: "flex",
     alignItems: "center",

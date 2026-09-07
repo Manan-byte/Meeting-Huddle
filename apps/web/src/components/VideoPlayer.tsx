@@ -1,12 +1,12 @@
 /**
- * @file VideoPlayer — renders a single video tile for a participant.
+ * @file VideoPlayer â€” renders a single video tile for a participant.
  *
  * Display states:
  *   1. Video active: binds MediaStream to a <video> element
  *   2. Video off: shows user initials as avatar
  *   3. Virtual background (local tile only): renders through SegmentedVideo
  *      (MediaPipe person cutout) so the speaker stays fully visible while the
- *      background is replaced — no full-frame tint.
+ *      background is replaced â€” no full-frame tint.
  *
  * Also shows: hand raise badge, participant name, "You" badge, and a speaking
  * indicator (audio bars) when the stream carries sound.
@@ -68,7 +68,7 @@ export function VideoPlayer({
     };
   }, [stream, isVideoOff]);
 
-  // Local tile with a chosen background → use real segmentation.
+  // Local tile with a chosen background â†’ use real segmentation.
   const useSegmented =
     isLocal && stream && !isVideoOff && (backgroundBlur || (virtualBackground && virtualBackground !== "blur"));
   const segMode = backgroundBlur
@@ -101,7 +101,7 @@ export function VideoPlayer({
         />
       )}
 
-      {/* Speaking indicator — audio bars when sound is coming in */}
+      {/* Speaking indicator â€” audio bars when sound is coming in */}
       {isSpeaking && !isMuted && (
         <div style={styles.speakingBadge} title="Speaking">
           <span style={styles.speakingBar} />
@@ -157,7 +157,7 @@ const styles: Record<string, CSSProperties> = {
     letterSpacing: "0.02em",
     color: "var(--text, #f0f2e9)",
     background:
-      "radial-gradient(circle at 30% 20%, rgba(155,234,92,0.18) 0%, transparent 60%), linear-gradient(135deg, #1c221f 0%, #0b0d0d 100%)",
+      "radial-gradient(circle at 30% 20%, rgba(79, 70, 229,0.18) 0%, transparent 60%), linear-gradient(135deg, #1c221f 0%, #0b0d0d 100%)",
   },
   speakingBadge: {
     position: "absolute",
@@ -175,7 +175,7 @@ const styles: Record<string, CSSProperties> = {
     width: 3,
     height: 10,
     borderRadius: 2,
-    background: "var(--accent, #9bea5c)",
+    background: "var(--accent, #7a82ff)",
     animation: "pulse 1s ease-in-out infinite",
   },
   handBadge: {

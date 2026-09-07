@@ -1,12 +1,12 @@
 /**
- * @file PreJoinScreen — clean, modern lobby before entering the meeting.
+ * @file PreJoinScreen â€” clean, modern lobby before entering the meeting.
  *
  * Shows a live camera preview so the user can check their mic/camera, pick
  * devices, and toggle mic/video before joining. On "Join now" it stops the
  * preview media (RoomPage re-acquires via useLiveKit) and invokes the
  * provided onJoin callback to emit CREATE_ROOM/JOIN_ROOM and enter the room.
  *
- * Design: a light, friendly SaaS-style panel — soft overlay, spacious card,
+ * Design: a light, friendly SaaS-style panel â€” soft overlay, spacious card,
  * rounded preview with polished center controls, accessible device pills,
  * and clear primary/secondary actions. Matches the app's light theme.
  *
@@ -102,7 +102,7 @@ export function PreJoinScreen({
         setTestingAudio(false);
       }, 600);
     } catch {
-      /* audio context unavailable — ignore */
+      /* audio context unavailable â€” ignore */
     }
   };
 
@@ -114,7 +114,7 @@ export function PreJoinScreen({
         JSON.stringify({ backgroundBlur, virtualBackground })
       );
     } catch {
-      /* storage unavailable — background just won't persist */
+      /* storage unavailable â€” background just won't persist */
     }
     onJoin();
   };
@@ -182,7 +182,7 @@ export function PreJoinScreen({
   };
 
   const initials = (userName || "?").slice(0, 2).toUpperCase();
-  /** Display name with the first letter capitalized (e.g. "mANAN" → "Manan"). */
+  /** Display name with the first letter capitalized (e.g. "mANAN" â†’ "Manan"). */
   const displayName = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : userName;
 
   return (
@@ -454,7 +454,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 26,
     height: 26,
     borderRadius: 8,
-    background: "rgba(155,234,92,0.25)",
+    background: "rgba(79, 70, 229,0.25)",
   },
   brandText: {
     fontSize: 16,
@@ -734,7 +734,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: "var(--accent)",
     color: "var(--accent-ink)",
     cursor: "pointer",
-    boxShadow: "0 6px 18px rgba(101,163,13,0.25)",
+    boxShadow: "0 6px 18px rgba(79,70,229,0.25)",
     transition: "background 0.15s, transform 0.1s",
   },
 };

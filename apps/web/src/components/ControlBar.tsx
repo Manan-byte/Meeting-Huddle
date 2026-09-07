@@ -139,7 +139,7 @@ export function ControlBar({
   const [showMore, setShowMore] = useState(false);
 
   return (
-    <div style={styles.bar}>
+    <div className="ctl-bar" style={styles.bar}>
       <div style={styles.leftSpacer} />
       <div style={styles.controls}>
         {/* ── Media controls ──────────────────────────────────────── */}
@@ -398,7 +398,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     padding: "10px 20px",
     borderTop: "1px solid var(--border)",
-    background: "rgba(255,255,255,0.85)",
+    background: "color-mix(in srgb, var(--bg-card) 85%, transparent)",
     backdropFilter: "blur(10px)",
   },
   leftSpacer: {

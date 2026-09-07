@@ -9,23 +9,23 @@
 
 :root {
   /* ── Backgrounds (light SaaS) ── */
-  --bg: #f8fafc;
+  --bg: #f5f7fa;
   --bg-raised: #ffffff;
-  --bg-soft: #f1f5f9;
+  --bg-soft: #eef1f6;
   --bg-card: #ffffff;
   --bg-input: #ffffff;
-  --bg-hover: #eef2f7;
+  --bg-hover: #e8ecf3;
 
   /* ── Text ── */
   --text: #0f172a;
   --text-muted: #475569;
   --text-dim: #64748b;
 
-  /* ── Accent (lime) ── */
-  --accent: #9bea5c;
-  --accent-hover: #84cc16;
-  --accent-dark: #65a30d;
-  --accent-ink: #1a2e05;
+  /* ── Accent (indigo) ── */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-dark: #3730a3;
+  --accent-ink: #ffffff;
 
   /* ── Status ── */
   --danger: #ef4444;
@@ -35,7 +35,7 @@
   /* ── Borders ── */
   --border: #e2e8f0;
   --border-soft: #eef2f7;
-  --border-focus: #9bea5c;
+  --border-focus: #4f46e5;
 
   /* ── Shadows ── */
   --shadow: 0 25px 60px rgba(15, 23, 42, 0.12);
@@ -49,33 +49,44 @@
 
   /* ── Layout ── */
   --max-width: 1180px;
+
+  /* -- Typography -- */
+  --font-display: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Monaco, monospace;
+
+  /* -- Compatibility aliases -- */
+  --text-primary: var(--text);
+  --text-secondary: var(--text-muted);
+  --bg-secondary: var(--bg-soft);
+  --bg-tertiary: var(--bg-hover);
 }
 
 /* Dark mode — toggled via data-theme on <html> */
 [data-theme="dark"] {
-  --bg: #0b0d0d;
-  --bg-raised: #101313;
-  --bg-soft: #151918;
-  --bg-card: #101313;
-  --bg-input: #151918;
-  --bg-hover: #1c221f;
+  --bg: #0b0e14;
+  --bg-raised: #11141c;
+  --bg-soft: #151924;
+  --bg-card: #11141c;
+  --bg-input: #151924;
+  --bg-hover: #1c2230;
 
-  --text: #f0f2e9;
-  --text-muted: #a9b0a5;
-  --text-dim: #8b9489;
+  --text: #e9ecf5;
+  --text-muted: #a6adbf;
+  --text-dim: #7f879c;
 
-  --accent: #9bea5c;
-  --accent-hover: #a7f35e;
-  --accent-dark: #426c2c;
-  --accent-ink: #17250f;
+  --accent: #7a82ff;
+  --accent-hover: #8f97ff;
+  --accent-dark: #5f67ea;
+  --accent-ink: #0b0e14;
 
   --danger: #ef4444;
   --danger-hover: #dc2626;
   --success: #22c55e;
 
-  --border: #28302b;
-  --border-soft: #1c221f;
-  --border-focus: #9bea5c;
+  --border: #29303f;
+  --border-soft: #1c2230;
+  --border-focus: #7a82ff;
 
   --shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 25px 60px rgba(0, 0, 0, 0.5);
@@ -87,13 +98,20 @@
 html, body, #root { height: 100%; width: 100%; }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
   overflow: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+::-webkit-scrollbar-track { background: transparent; }
 
 ::selection { background: var(--accent); color: var(--accent-ink); }
 
@@ -113,6 +131,18 @@ button, input, a {
 button:focus-visible, input:focus-visible, a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Control bar (RoomPage) round buttons — hover/active state.
+   Inline `boxShadow` (speaking ring) and dynamic backgrounds win over
+   these rules because inline styles outrank classes. */
+.ctl-bar button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 2px var(--border-strong, var(--border));
+}
+.ctl-bar button:not(:disabled):active {
+  transform: translateY(0);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 /* ════════════════════════════════════════════════════════════════

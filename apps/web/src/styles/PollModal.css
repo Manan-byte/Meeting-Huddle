@@ -1,5 +1,5 @@
 /* ================================================================
-   PollModal — polling UI overlay + all poll-* classes
+   PollModal â€” polling UI overlay + all poll-* classes
    ================================================================ */
 
 .poll-modal-overlay {
@@ -51,7 +51,7 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .poll-input::placeholder { color: var(--text-dim); }
-.poll-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(155,234,92,0.12); }
+.poll-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79, 70, 229,0.12); }
 .poll-question-input { font-size: 15px; font-weight: 500; }
 .poll-option-row { display: flex; gap: 8px; align-items: center; }
 .poll-option-row .poll-input { flex: 1; }
@@ -69,7 +69,7 @@
   margin: 2px -10px 6px; cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.poll-add-option:hover { background: rgba(155,234,92,0.1); color: var(--accent-hover); }
+.poll-add-option:hover { background: rgba(79, 70, 229,0.1); color: var(--accent-hover); }
 .poll-create-btn {
   width: 100%; padding: 12px 16px;
   background: var(--accent); color: var(--accent-ink);
