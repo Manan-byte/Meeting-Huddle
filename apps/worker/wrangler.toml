@@ -1,0 +1,30 @@
+name = "huddle"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Frontend build served as static assets (single origin).
+# Point at the web dist output.
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+
+# D1 database (Cloudflare serverless SQLite) — users, sessions, history, schedule.
+[[d1_databases]]
+binding = "DB"
+database_name = "huddle"
+database_id = "f0595706-664f-4409-9649-629b94e974cc"
+
+# Durable Object — holds all room state + WebSocket connections.
+[[durable_objects.bindings]]
+name = "HUDDLE_DO"
+class_name = "HuddleDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["HuddleDO"]
+
+# Environment variables (non-secret). Secrets set via `wrangler secret put`.
+[vars]
+LIVEKIT_URL = "wss://huddler-xonlpeio.livekit.cloud"
+LIVEKIT_API_KEY = "APICLqCAoWYafBz"
