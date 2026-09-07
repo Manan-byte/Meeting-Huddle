@@ -10,6 +10,7 @@
  */
 
 import type { WaitingUser } from "@meet-app/shared";
+import "../styles/WaitingRoom.css";
 
 interface WaitingRoomProps {
   /** Array of users currently in the waiting room. */

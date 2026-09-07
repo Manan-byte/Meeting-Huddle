@@ -1,0 +1,9 @@
+/* ================================================================
+   MeetingTimer — elapsed-time pill in the room header
+   ================================================================ */
+
+.meeting-timer {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-muted);
+  background: var(--bg-soft); padding: 4px 10px; border-radius: var(--radius-sm);
+}

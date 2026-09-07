@@ -17,6 +17,7 @@ import { useState, useCallback, useEffect } from "react";
 import type { Poll } from "@meet-app/shared";
 import { SOCKET_EVENTS, POLL_MAX_OPTIONS } from "@meet-app/shared";
 import type { Socket } from "socket.io-client";
+import "../styles/PollModal.css";
 
 interface PollModalProps {
   /** Whether the modal is open. */

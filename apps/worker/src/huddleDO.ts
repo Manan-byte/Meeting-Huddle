@@ -25,9 +25,6 @@ import type {
   Reaction,
   Poll,
   PollOption,
-  MeetingNote,
-  ActionItem,
-  MeetingSummary,
   WaitingUser,
 } from "@meet-app/shared";
 import type { Env } from "./index";
@@ -562,63 +559,6 @@ export class HuddleDO implements DurableObject {
             startedAt: room.startedAt,
           });
           this.roomPolls.delete(room.code);
-          break;
-        }
-
-        // ── AI Companion ──────────────────────────────────────────────
-        case SOCKET_EVENTS.AI_ADD_NOTE: {
-          const room = this.roomOf(userId);
-          if (!room) return;
-          const note: MeetingNote = {
-            id: crypto.randomUUID(),
-            text: String(data.text ?? ""),
-            timestamp: Date.now(),
-            author: userId,
-          };
-          this.broadcast(room.code, SOCKET_EVENTS.AI_NOTE_ADDED, note);
-          break;
-        }
-
-        case SOCKET_EVENTS.AI_ACTION_ITEM: {
-          const room = this.roomOf(userId);
-          if (!room) return;
-          const item: ActionItem = {
-            id: crypto.randomUUID(),
-            text: String(data.text ?? ""),
-            assignee: (data.assignee as string | null) ?? null,
-            done: false,
-          };
-          this.broadcast(room.code, SOCKET_EVENTS.AI_ACTION_ITEM_UPDATED, item);
-          break;
-        }
-
-        case SOCKET_EVENTS.AI_GENERATE_SUMMARY: {
-          const room = this.roomOf(userId);
-          if (!room) return;
-          const messages = this.chatHistory.get(room.code) ?? [];
-          const actionItems: ActionItem[] = [];
-          const topicCounts: Record<string, number> = {};
-          const notes: MeetingNote[] = [];
-          for (const msg of messages) {
-            const text = msg.text;
-            const lower = text.toLowerCase();
-            if (lower.includes("todo:") || lower.includes("action:") || lower.includes("will do") || lower.includes("need to")) {
-              actionItems.push({ id: crypto.randomUUID(), text, assignee: null, done: false });
-            }
-            for (const word of text.split(/\s+/)) {
-              const cleaned = word.toLowerCase().replace(/[^a-z]/g, "");
-              if (cleaned.length > 3) topicCounts[cleaned] = (topicCounts[cleaned] || 0) + 1;
-            }
-          }
-          const keyTopics = Object.entries(topicCounts).sort(([, a], [, b]) => b - a).slice(0, 5).map(([t]) => t);
-          notes.push({
-            id: crypto.randomUUID(),
-            text: `Summary generated from ${messages.length} messages`,
-            timestamp: Date.now(),
-            author: "ai",
-          });
-          const summary: MeetingSummary = { notes, actionItems, keyTopics, generatedAt: Date.now() };
-          this.send(ws, SOCKET_EVENTS.AI_SUMMARY_READY, summary);
           break;
         }
 

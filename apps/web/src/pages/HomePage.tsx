@@ -1,15 +1,16 @@
 /**
- * @file Home page — a Zoom/Google Meet-style landing page.
+ * @file Home page — landing + dashboard (Zoom/Google Meet-style).
  *
- * Layout (no sidebar — a clean top nav + hero):
- *   - Top nav: Huddle brand, page links (Dashboard/Meetings/Schedule/History/Settings),
- *     and Sign in / account avatar.
- *   - Hero (dashboard view): left = tagline + name input + "New meeting" + join-with-code;
- *     right = a mock video-call illustration (three tiles).
- *   - Feature strip: HD video, screen sharing, chat & polls.
- *   - Other views (Meetings/Schedule/History/Settings) are full pages below the nav.
+ * Layout (clean top nav + hero):
+ *   - Top nav: Huddle brand, page links (Dashboard/Schedule/History), Sign in.
+ *   - Hero (dashboard view): tagline + name input + "New meeting" + join-by-code;
+ *     right = mock video-call illustration.
+ *   - Feature strip: HD video & screen share, clear audio, chat/polls/reactions.
+ *   - Admin views (Schedule/History) full pages below the nav.
  *
- * All auth, persistence, and meeting flows are preserved.
+ * Copy describes the current Cloudflare (Worker + Durable Object) backend and
+ * LiveKit SFU media engine. Real-time create/join + auth + dashboard all flow
+ * through the WebSocket in SocketContext.
  */
 
 import { useState, useEffect } from "react";
@@ -37,6 +38,7 @@ import { useRoom } from "../contexts/RoomContext";
 import { useAuth } from "../contexts/AuthContext";
 import { PreJoinScreen } from "../components/PreJoinScreen";
 import { CalendarPicker, TimePicker, buildInviteMailto } from "../components/SchedulePicker";
+import "../styles/HomePage.css";
 
 interface HomePageProps {
   onJoinRoom: () => void;
@@ -261,9 +263,9 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
     : "History";
 
   const features = [
-    { icon: Monitor, title: "HD video & screen share", desc: "Crystal-clear calls with one-click screen sharing." },
-    { icon: Mic, title: "Clear audio", desc: "Noise suppression and live speaking indicators." },
-    { icon: MessagesSquare, title: "Chat & polls", desc: "Keep everyone engaged in real time." },
+    { icon: Monitor, title: "HD video & screen share", desc: "SFU-powered crystal-clear video with one-click screen sharing — scales to many participants." },
+    { icon: Mic, title: "Clear audio", desc: "Noise suppression, live speaking indicators, and push-to-talk." },
+    { icon: MessagesSquare, title: "Chat, polls & reactions", desc: "Real-time chat, polls, hand raise, emoji reactions, and live captions." },
   ];
 
   return (
@@ -313,8 +315,8 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
               <div style={styles.heroLeft}>
                 <h1 style={styles.heroTitle}>{viewTitle}</h1>
                 <p style={styles.heroSubtitle}>
-                  Connect, collaborate, and meet with crystal-clear quality — right from your browser.
-                  No downloads, no sign-ups required.
+                  Free, browser-based video meetings — powered by Cloudflare edge infrastructure.
+                  Share screens, chat, poll, and record in real time with no install.
                 </p>
 
                 <div style={styles.heroForm}>

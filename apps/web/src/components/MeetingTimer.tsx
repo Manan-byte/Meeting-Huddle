@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
+import "../styles/MeetingTimer.css";
 
 interface MeetingTimerProps {
   /** Timestamp (ms) when the meeting started. */

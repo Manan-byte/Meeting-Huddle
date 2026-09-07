@@ -1,0 +1,30 @@
+/* ================================================================
+   WaitingRoom — host panel for admitting/rejecting users
+   ================================================================ */
+
+.waiting-room {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px 18px; min-width: 280px; z-index: 15;
+}
+.waiting-room-title {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.waiting-room-icon { font-size: 16px; }
+.waiting-room-list { display: flex; flex-direction: column; gap: 8px; }
+.waiting-room-user {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+}
+.waiting-room-user:last-child { border-bottom: none; }
+.waiting-room-name { font-size: 14px; color: var(--text); }
+.waiting-room-actions { display: flex; gap: 6px; }
+.waiting-room-btn {
+  padding: 4px 12px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 500; border: none; cursor: pointer;
+}
+.waiting-room-btn.admit { background: var(--success); color: var(--accent-ink); }
+.waiting-room-btn.admit:hover { background: var(--accent-hover); }
+.waiting-room-btn.reject { background: var(--danger); color: #fff; }
+.waiting-room-btn.reject:hover { background: var(--danger-hover); }

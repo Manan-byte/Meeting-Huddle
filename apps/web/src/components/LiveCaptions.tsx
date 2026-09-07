@@ -18,6 +18,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { CaptionSegment } from "@meet-app/shared";
 import { SOCKET_EVENTS } from "@meet-app/shared";
+import "../styles/LiveCaptions.css";
 import type { Socket } from "socket.io-client";
 
 interface LiveCaptionsProps {

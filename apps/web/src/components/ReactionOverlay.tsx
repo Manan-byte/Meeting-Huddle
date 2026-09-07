@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from "react";
 import type { Reaction } from "@meet-app/shared";
+import "../styles/Reactions.css";
 
 interface ReactionOverlayProps {
   /** Array of reactions to display as floating animations. */

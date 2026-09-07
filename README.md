@@ -50,7 +50,8 @@ Tidak ada unduhan/instalasi — cukup browser (WebRTC).
 - **Data = Cloudflare D1** via binding (bukan file `db.json`); tabel dibuat otomatis saat pertama koneksi.
 
 > Detail lengkap: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/COMPONENTS.md`](docs/COMPONENTS.md),
-> [`docs/API.md`](docs/API.md), [`docs/FEATURES.md`](docs/FEATURES.md), [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+> [`docs/API.md`](docs/API.md), [`docs/FEATURES.md`](docs/FEATURES.md), [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md),
+> [`docs/CODE_GUIDE.md`](docs/CODE_GUIDE.md) (panduan fungsi setiap file).
 
 ## Setup & Run (development)
 

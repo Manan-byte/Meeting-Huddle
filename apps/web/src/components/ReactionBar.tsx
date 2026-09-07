@@ -9,6 +9,7 @@
  */
 
 import type { Reaction, ReactionType } from "@meet-app/shared";
+import "../styles/Reactions.css";
 
 interface ReactionBarProps {
   /** Callback to send a reaction of the given type. */
