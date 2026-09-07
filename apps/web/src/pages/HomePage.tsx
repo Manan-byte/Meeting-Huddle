@@ -25,7 +25,6 @@ import {
   Monitor,
   Mic,
   MessagesSquare,
-  Github,
   Mail,
   Lock,
   X,
@@ -44,19 +43,6 @@ import "../styles/HomePage.css";
 
 interface HomePageProps {
   onJoinRoom: () => void;
-}
-
-/** Official Google "G" mark (multicolor SVG), used on the Google sign-in button. */
-function GoogleIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-      <path fill="none" d="M0 0h48v48H0z" />
-    </svg>
-  );
 }
 
 /** A completed meeting from the server's persisted history. */
@@ -126,7 +112,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledMeeting[]>([]);
   const [showAuth, setShowAuth] = useState(false);
-  const [authMode, setAuthMode] = useState<"choose" | "email" | "register" | "forgot">("choose");
+  const [authMode, setAuthMode] = useState<"email" | "register" | "forgot">("email");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authName, setAuthName] = useState("");
@@ -694,7 +680,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
       {/* Toast */}
       {toast && <div style={styles.toast}>{toast}</div>}
 
-      {/* Auth modal — sign in with email or GitHub (no manual registration) */}
+      {/* Auth modal — sign in / sign up with email (no OAuth) */}
       {showAuth && (
         <div style={styles.authOverlay} onClick={() => setShowAuth(false)}>
           <div style={styles.authModal} onClick={(e) => e.stopPropagation()}>
@@ -710,76 +696,12 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
             <h2 style={styles.authTitle}>Sign in</h2>
             <p style={styles.authSub}>Sign in to schedule meetings and invite guests.</p>
 
-            {authMode === "choose" ? (
-              <>
-                {/* Google (Gmail) login */}
-                <button
-                  className="hp-ghost"
-                  style={styles.googleBtn}
-                  onClick={() => {
-                    const cid = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-                    if (cid) {
-                      const redirect = encodeURIComponent(`${window.location.origin}/auth/google/callback`);
-                      window.location.href =
-                        `https://accounts.google.com/o/oauth2/v2/auth?client_id=${cid}&redirect_uri=${redirect}&response_type=code&scope=openid%20email%20profile&prompt=select_account`;
-                    } else {
-                      showToast("Google login belum dikonfigurasi (VITE_GOOGLE_CLIENT_ID).");
-                    }
-                  }}
-                >
-                  <GoogleIcon />
-                  Continue with Google
-                </button>
-
-                {/* GitHub login */}
-                <button
-                  className="hp-ghost"
-                  style={styles.githubBtn}
-                  onClick={() => {
-                    const cid = import.meta.env.VITE_GITHUB_CLIENT_ID;
-                    if (cid) {
-                      const redirect = encodeURIComponent(`${window.location.origin}/auth/github/callback`);
-                      window.location.href =
-                        `https://github.com/login/oauth/authorize?client_id=${cid}&redirect_uri=${redirect}&scope=user:email`;
-                    } else {
-                      showToast("GitHub login belum dikonfigurasi (VITE_GITHUB_CLIENT_ID).");
-                    }
-                  }}
-                >
-                  <Github size={18} />
-                  Continue with GitHub
-                </button>
-
-                {/* Email login */}
-                <button
-                  className="hp-ghost"
-                  style={styles.emailBtn}
-                  onClick={() => { setAuthMode("email"); setAuthError(""); }}
-                >
-                  <Mail size={18} />
-                  Continue with email
-                </button>
-
-                {/* "or" divider — centered with rules on both sides */}
-                <div style={styles.authDivider}>
-                  <span style={styles.authDividerLine} />
-                  <span style={styles.authDividerText}>or</span>
-                  <span style={styles.authDividerLine} />
-                </div>
-
-                <p style={styles.authAlt}>
-                  New to Huddle?{" "}
-                  <button style={styles.authAltLink} onClick={() => { setAuthMode("register"); setAuthError(""); }}>
-                    Sign up with email
-                  </button>
-                </p>
-              </>
-            ) : authMode === "register" ? (
+            {authMode === "register" ? (
               <>
                 {/* Email + name + password register */}
                 <button
                   style={styles.authBack}
-                  onClick={() => { setAuthMode("choose"); setAuthError(""); }}
+                  onClick={() => { setAuthMode("email"); setAuthError(""); }}
                 >
                   ← Back
                 </button>
@@ -822,7 +744,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                     const err = await register(authName, authEmail, authPassword);
                     if (err) setAuthError(err);
                     else {
-                      setShowAuth(false); setAuthMode("choose"); setAuthError(""); setAuthName(""); setAuthEmail(""); setAuthPassword("");
+                      setShowAuth(false); setAuthMode("email"); setAuthError(""); setAuthName(""); setAuthEmail(""); setAuthPassword("");
                       showToast("Account created — signed in.");
                     }
                   }}
@@ -907,7 +829,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                         if (!socket) return;
                         socket.emit("auth:reset", { email: authEmail, code: authResetCodeInput, newPassword: authPassword }, (res: { ok: boolean; error?: string }) => {
                           if (res.ok) {
-                            setShowAuth(false); setAuthMode("choose"); setAuthError(""); setAuthPassword(""); setAuthResetIssued(false); setAuthResetCode(""); setAuthResetCodeInput("");
+                            setShowAuth(false); setAuthMode("email"); setAuthError(""); setAuthPassword(""); setAuthResetIssued(false); setAuthResetCode(""); setAuthResetCodeInput("");
                             showToast("Password updated — sign in with your new password.");
                           } else {
                             setAuthError(res.error ?? "Reset failed. Try again.");
@@ -925,7 +847,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                 {/* Email + password login */}
                 <button
                   style={styles.authBack}
-                  onClick={() => { setAuthMode("choose"); setAuthError(""); }}
+                  onClick={() => { setAuthMode("email"); setAuthError(""); }}
                 >
                   ← Back
                 </button>
@@ -964,13 +886,20 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                     const err = await login(authEmail, authPassword);
                     if (err) setAuthError(err);
                     else {
-                      setShowAuth(false); setAuthMode("choose"); setAuthError(""); setAuthEmail(""); setAuthPassword("");
+                      setShowAuth(false); setAuthMode("email"); setAuthError(""); setAuthEmail(""); setAuthPassword("");
                       showToast("Signed in.");
                     }
                   }}
                 >
                   Sign in
                 </button>
+
+                <p style={styles.authAlt}>
+                  New to Huddle?{" "}
+                  <button style={styles.authAltLink} onClick={() => { setAuthMode("register"); setAuthError(""); }}>
+                    Sign up with email
+                  </button>
+                </p>
               </>
             )}
           </div>
