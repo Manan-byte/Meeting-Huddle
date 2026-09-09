@@ -42,7 +42,10 @@ import { CalendarPicker, TimePicker, buildInviteMailto } from "../components/Sch
 import "../styles/HomePage.css";
 
 interface HomePageProps {
+  /** Called when the user successfully creates/joins a meeting (enter room view). */
   onJoinRoom: () => void;
+  /** Called when joining a locked room — enter the room view in waiting state. */
+  onWaitingRoom: () => void;
 }
 
 /** A completed meeting from the server's persisted history. */
@@ -104,10 +107,10 @@ function formatSchedTime(hhmm: string): string {
   return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-export function HomePage({ onJoinRoom }: HomePageProps) {
+export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
   const { socket } = useSocket();
   const { setRoom, setCurrentUser, setParticipants } = useRoom();
-  const { user, loading: authLoading, login, register, logout } = useAuth();
+  const { user, loading: authLoading, login, register, logout, token } = useAuth();
 
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledMeeting[]>([]);
@@ -149,20 +152,21 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
   const showToast = (msg: string) => setToast(msg);
   const goTo = (v: "dashboard" | "schedule" | "history") => setActiveView(v);
 
-  // Load real dashboard data from the server.
+  // Load real dashboard data from the server. Only signed-in users may
+  // fetch history/schedule — the server rejects unauthenticated requests.
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user || !token) return;
     const onHistory = (rows: HistoryMeeting[]) => setHistory(rows);
     const onSchedule = (rows: ScheduledMeeting[]) => setScheduled(rows);
     socket.on(DASH_EVENTS.HISTORY_RESULT, onHistory);
     socket.on(DASH_EVENTS.SCHEDULE_RESULT, onSchedule);
-    socket.emit(DASH_EVENTS.GET_HISTORY);
-    socket.emit(DASH_EVENTS.GET_SCHEDULE);
+    socket.emit(DASH_EVENTS.GET_HISTORY, { token });
+    socket.emit(DASH_EVENTS.GET_SCHEDULE, { token });
     return () => {
       socket.off(DASH_EVENTS.HISTORY_RESULT, onHistory);
       socket.off(DASH_EVENTS.SCHEDULE_RESULT, onSchedule);
     };
-  }, [socket]);
+  }, [socket, user, token]);
 
   useEffect(() => {
     if (user?.name && !userName) setUserName(user.name);
@@ -249,6 +253,14 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
       setError("Room is locked.");
       setIsCreating(false);
       setPreviewing(null);
+    });
+    // Locked room: the server places us in the waiting room (WAITING_ROOM_STATUS).
+    // Enter the room view — RoomPage renders the waiting-room screen there and
+    // flips to the live meeting when the host admits us (ROOM_JOINED).
+    socket.once(SOCKET_EVENTS.WAITING_ROOM_STATUS, () => {
+      setIsCreating(false);
+      setPreviewing(null);
+      onWaitingRoom();
     });
   };
 
@@ -575,7 +587,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                     .split(/[\s,]+/)
                     .map((e) => e.trim())
                     .filter(Boolean);
-                  socket.emit(DASH_EVENTS.SCHEDULE, { title: schedTitle, date: schedDate, time: schedTime, invitees }, (res: { ok: boolean; meeting?: ScheduledMeeting; error?: string }) => {
+                  socket.emit(DASH_EVENTS.SCHEDULE, { title: schedTitle, date: schedDate, time: schedTime, invitees, token }, (res: { ok: boolean; meeting?: ScheduledMeeting; error?: string }) => {
                     if (res.ok && res.meeting) {
                       setScheduled((prev) => [...prev, res.meeting!]);
                       setSchedTitle(""); setSchedDate(""); setSchedTime(""); setSchedInvitees("");
@@ -629,7 +641,7 @@ export function HomePage({ onJoinRoom }: HomePageProps) {
                           )}
                         </td>
                         <td style={styles.td}>
-                          <button style={styles.cancelBtn} onClick={() => socket?.emit(DASH_EVENTS.CANCEL_SCHEDULE, { id: m.id }, () => { setScheduled((prev) => prev.filter((x) => x.id !== m.id)); showToast("Scheduled meeting cancelled."); })}>Cancel</button>
+                          <button style={styles.cancelBtn} onClick={() => socket?.emit(DASH_EVENTS.CANCEL_SCHEDULE, { id: m.id, token }, () => { setScheduled((prev) => prev.filter((x) => x.id !== m.id)); showToast("Scheduled meeting cancelled."); })}>Cancel</button>
                         </td>
                       </tr>
                     ))}

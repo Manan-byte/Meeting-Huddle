@@ -25,6 +25,8 @@ import { RoomPage } from "./pages/RoomPage";
 export function App() {
   // Simple state-based routing: "home" or "room"
   const [view, setView] = useState<"home" | "room">("home");
+  // True when we joined a locked room and wait for host approval.
+  const [inWaitingRoom, setInWaitingRoom] = useState(false);
 
   // Auto-join from URL param ?join=CODE (used by invite links)
   // Invite links use ?join=CODE — HomePage reads the param and pre-fills
@@ -38,9 +40,24 @@ export function App() {
         {/* RoomProvider wraps page components — provides room state (participants, messages, etc.) */}
         <RoomProvider>
           {view === "home" ? (
-            <HomePage onJoinRoom={() => setView("room")} />
+            <HomePage
+              onJoinRoom={() => {
+                setInWaitingRoom(false);
+                setView("room");
+              }}
+              onWaitingRoom={() => {
+                setInWaitingRoom(true);
+                setView("room");
+              }}
+            />
           ) : (
-            <RoomPage onLeaveRoom={() => setView("home")} />
+            <RoomPage
+              onLeaveRoom={() => {
+                setView("home");
+                setInWaitingRoom(false);
+              }}
+              initialWaiting={inWaitingRoom}
+            />
           )}
         </RoomProvider>
       </AuthProvider>

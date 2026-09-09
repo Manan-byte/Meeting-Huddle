@@ -691,15 +691,31 @@ export class HuddleDO implements DurableObject {
         // ── Dashboard (ack-based) ─────────────────────────────────────
         case DASH_EVENTS.GET_HISTORY: {
           await this.schemaReady;
+          // Dashboard data is private: only serve to signed-in sessions.
+          const uid = await this.db.getSessionUserId(String((data as { token?: string }).token ?? ""));
+          if (!uid) {
+            if (ack !== undefined) resolve({ ok: false, error: "Not signed in." });
+            return;
+          }
           this.send(ws, DASH_EVENTS.HISTORY_RESULT, await this.db.getMeetingHistory(50));
           break;
         }
         case DASH_EVENTS.GET_SCHEDULE: {
           await this.schemaReady;
+          const uid = await this.db.getSessionUserId(String((data as { token?: string }).token ?? ""));
+          if (!uid) {
+            if (ack !== undefined) resolve({ ok: false, error: "Not signed in." });
+            return;
+          }
           this.send(ws, DASH_EVENTS.SCHEDULE_RESULT, await this.db.getScheduledMeetings());
           break;
         }
         case DASH_EVENTS.SCHEDULE: {
+          const uid = await this.db.getSessionUserId(String((data as { token?: string }).token ?? ""));
+          if (!uid) {
+            resolve({ ok: false, error: "Not signed in." });
+            return;
+          }
           const title = String((data as { title?: string }).title ?? "").trim();
           const date = String((data as { date?: string }).date ?? "").trim();
           const time = String((data as { time?: string }).time ?? "").trim();
@@ -709,12 +725,17 @@ export class HuddleDO implements DurableObject {
           }
           const invitees = normalizeInvitees((data as { invitees?: unknown }).invitees);
           await this.schemaReady;
-          const meeting = await this.db.createScheduledMeeting(title, date, time, userId, invitees);
+          const meeting = await this.db.createScheduledMeeting(title, date, time, uid, invitees);
           resolve({ ok: true, meeting });
           break;
         }
         case DASH_EVENTS.CANCEL_SCHEDULE: {
           await this.schemaReady;
+          const uid = await this.db.getSessionUserId(String((data as { token?: string }).token ?? ""));
+          if (!uid) {
+            resolve({ ok: false, error: "Not signed in." });
+            return;
+          }
           const ok = await this.db.cancelScheduledMeeting(String((data as { id?: string }).id ?? ""));
           resolve({ ok });
           break;

@@ -21,6 +21,7 @@ import { useSocket } from "../contexts/SocketContext";
 import { useRoom } from "../contexts/RoomContext";
 import {
   SOCKET_EVENTS,
+  type Room,
   type ChatMessage,
   type RoomState,
   type User,
@@ -55,13 +56,15 @@ import { ViewSettingsModal } from "../components/ViewSettingsModal";
 interface RoomPageProps {
   /** Callback to switch the App view back to "home" (leaves the room). */
   onLeaveRoom: () => void;
+  /** True when we arrived via a locked-room join (waiting for host admit). */
+  initialWaiting?: boolean;
 }
 
 /**
  * Main room page component — the video meeting interface.
  * Registers all socket event listeners and renders the full meeting UI.
  */
-export function RoomPage({ onLeaveRoom }: RoomPageProps) {
+export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps) {
   // ── Context & hooks ───────────────────────────────────────────────────
   const { socket } = useSocket();
   const {
@@ -73,6 +76,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     recording,
     meetingStartedAt,
     setRoom,
+    setCurrentUser,
     setParticipants,
     addMessage,
     setMessages,
@@ -120,7 +124,39 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
   const [captionSegments, setCaptionSegments] = useState<CaptionSegment[]>([]); // Caption text
   const [waitingUsers, setWaitingUsers] = useState<WaitingUser[]>([]);  // Waiting room users
   const [isMeetingEnded, setIsMeetingEnded] = useState(false);     // Meeting ended flag
-  const [isInWaitingRoom, setIsInWaitingRoom] = useState(false);   // Waiting room flag
+  const [isInWaitingRoom, setIsInWaitingRoom] = useState(initialWaiting);   // Waiting room flag
+  /** Message shown when the host rejects a waiting-room join. */
+  const [rejectMessage, setRejectMessage] = useState<string | null>(null);
+
+  // ── Waiting-room admission ───────────────────────────────────────────
+  // Registered UNCONDITIONALLY (the main listener effect returns early while
+  // `room` is null, e.g. during the waiting room). When the host admits us the
+  // server sends ROOM_JOINED — handle it here to populate room state and flip
+  // out of the waiting screen. A host reject arrives as a plain "error" event.
+  useEffect(() => {
+    if (!socket) return;
+    const handleAdmitted = (data: { room: Room; user: User }) => {
+      setRoom(data.room);
+      setCurrentUser(data.user);
+      setParticipants(data.room.participants);
+      setIsInWaitingRoom(false);
+    };
+    const handleWaitingStatus = (data: { waiting: boolean }) => {
+      setIsInWaitingRoom(data.waiting);
+    };
+    const handleRejected = (msg: { message?: string } | undefined) => {
+      setIsInWaitingRoom(false);
+      setRejectMessage(msg?.message ?? "The host rejected your join request.");
+    };
+    socket.on(SOCKET_EVENTS.ROOM_JOINED, handleAdmitted);
+    socket.on(SOCKET_EVENTS.WAITING_ROOM_STATUS, handleWaitingStatus);
+    socket.on("error", handleRejected);
+    return () => {
+      socket.off(SOCKET_EVENTS.ROOM_JOINED, handleAdmitted);
+      socket.off(SOCKET_EVENTS.WAITING_ROOM_STATUS, handleWaitingStatus);
+      socket.off("error", handleRejected);
+    };
+  }, [socket, setRoom, setCurrentUser, setParticipants]);
 
   // ── Recording (client-side MediaRecorder) ──────────────────────────
   // Records the local stream (camera or screen share + mic audio) to WebM.
@@ -145,7 +181,7 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     screenStream,
     settings,
     applySettings,
-  } = useLiveKit({ roomName: room?.code ?? null, identity: currentUser?.name ?? "participant" });
+  } = useLiveKit({ roomName: room?.code ?? null, identity: currentUser?.id ?? "participant" });
 
   // Local mic activity → speaking ring on the mic button (and own tile).
   const localSpeakingLevel = useSpeakingLevel(localStream);
@@ -575,6 +611,23 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
     );
   }
 
+  // Rejected from the waiting room — show the message and let the user leave.
+  if (rejectMessage) {
+    return (
+      <div style={styles.endedContainer}>
+        <div style={styles.endedContent}>
+          <span style={styles.endedMark}><Video size={18} color="var(--accent-ink)" /></span>
+          <span style={styles.endedEyebrow}>Huddle</span>
+          <h2 style={styles.endedTitle}>Join Request Declined</h2>
+          <p style={styles.endedSub}>{rejectMessage}</p>
+          <button className="dash-primary" style={styles.endedButton} onClick={onLeaveRoom}>
+            Return to Lobby
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Waiting room screen — shown when room is locked and user is waiting for host approval
   if (isInWaitingRoom) {
     return (
@@ -755,13 +808,11 @@ export function RoomPage({ onLeaveRoom }: RoomPageProps) {
           onClose={() => setShowInvite(false)}
         />
       )}
-      {showPolls && (
-        <PollModal
-          isOpen={showPolls}
-          onClose={() => setShowPolls(false)}
-          socket={socket}
-        />
-      )}
+      <PollModal
+        isOpen={showPolls}
+        onClose={() => setShowPolls(false)}
+        socket={socket}
+      />
 
       {/* Adjust view (layout) modal */}
       {showViewSettings && (

@@ -20,7 +20,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track, createLocalAudioTrack, createLocalVideoTrack } from "livekit-client";
-import type { RemoteTrackPublication, LocalVideoTrack, LocalAudioTrack } from "livekit-client";
+import type { LocalVideoTrack, LocalAudioTrack } from "livekit-client";
 
 /** Options passed to the useLiveKit hook. */
 interface UseLiveKitOptions {
@@ -75,26 +75,37 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
         room = new Room();
         roomRef.current = room;
 
-        // Surface remote audio/video tracks as MediaStreams.
-        room.on(RoomEvent.TrackSubscribed, (_track, pub, participant) => {
-          const track = (pub as RemoteTrackPublication).track;
-          if (track && track.kind === Track.Kind.Video || (track && track.kind === Track.Kind.Audio)) {
-            setRemoteStreams((prev) => {
-              const next = new Map(prev);
-              const stream = new MediaStream([track.mediaStreamTrack]);
-              next.set(participant.identity, stream);
-              return next;
-            });
-          }
-        });
-        room.on(RoomEvent.TrackUnsubscribed, (_track, _pub, participant) => {
+        // Tracks per remote participant, so a participant's MediaStream carries
+        // BOTH audio and video. The naive per-event `new MediaStream([oneTrack])`
+        // replaces the stream and silently drops the other track (remote audio
+        // never played). We accumulate tracks and rebuild on each change.
+        const remoteTracks = new Map<string, MediaStreamTrack[]>();
+
+        room.on(RoomEvent.TrackSubscribed, (track, _pub, participant) => {
+          const mediaTrack = track?.mediaStreamTrack;
+          if (!mediaTrack) return;
+          const arr = remoteTracks.get(participant.identity) ?? [];
+          if (!arr.includes(mediaTrack)) arr.push(mediaTrack);
+          remoteTracks.set(participant.identity, arr);
           setRemoteStreams((prev) => {
             const next = new Map(prev);
-            next.delete(participant.identity);
+            next.set(participant.identity, new MediaStream(arr));
+            return next;
+          });
+        });
+        room.on(RoomEvent.TrackUnsubscribed, (track, _pub, participant) => {
+          const mediaTrack = track?.mediaStreamTrack;
+          const arr = (remoteTracks.get(participant.identity) ?? []).filter((t) => t !== mediaTrack);
+          remoteTracks.set(participant.identity, arr);
+          setRemoteStreams((prev) => {
+            const next = new Map(prev);
+            if (arr.length) next.set(participant.identity, new MediaStream(arr));
+            else next.delete(participant.identity);
             return next;
           });
         });
         room.on(RoomEvent.Disconnected, () => {
+          remoteTracks.clear();
           setRemoteStreams(new Map());
         });
 

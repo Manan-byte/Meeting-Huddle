@@ -13,6 +13,7 @@ import type { Env } from "./index";
 
 interface LiveKitClaims {
   iss: string;
+  sub: string;
   nbf: number;
   exp: number;
   video: {
@@ -44,6 +45,12 @@ export async function issueLiveKitToken(env: Env, room: string, name: string): P
   const now = Math.floor(Date.now() / 1000);
   const claims: LiveKitClaims = {
     iss: env.LIVEKIT_API_KEY,
+    // `sub` is the LiveKit participant identity. LiveKit rejects (HTTP 400)
+    // tokens without it; livekit-server-sdk always sets it.
+    // The client passes its socket/user id as `name` and keys remote streams
+    // by that same id, so `sub` MUST mirror it — a random UUID here would
+    // desync remote media lookup (no remote audio/video ever renders).
+    sub: name,
     nbf: now - 10,
     exp: now + 10 * 60, // 10 minutes
     video: {
