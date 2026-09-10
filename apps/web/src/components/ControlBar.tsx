@@ -40,7 +40,7 @@ import {
   Captions,
   ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { LayoutMode } from "@meet-app/shared";
 import { formatHotkey } from "../hooks/usePushToTalk";
 import { VoiceMenu } from "./VoiceMenu";
@@ -156,6 +156,19 @@ export function ControlBar({
 }: ControlBarProps) {
   const [showMore, setShowMore] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
+
+  // Close the Voice menu when clicking anywhere else (prevents it lingering
+  // over the video and looking like an overlap).
+  useEffect(() => {
+    if (!showVoice) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest(".ctl-vmenu") || target.closest("[class*='voiceWrap']")) return;
+      setShowVoice(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [showVoice]);
 
   return (
     <div className="ctl-bar" style={styles.bar}>
