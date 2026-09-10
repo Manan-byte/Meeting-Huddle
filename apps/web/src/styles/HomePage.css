@@ -103,10 +103,16 @@
   letter-spacing: 0.01em;
 }
 .hp-footer-line span { color: #7a82ff; font-weight: 600; }
+.hp-footer-copy {
+  font-size: 12px;
+  color: #5c6478;
+  letter-spacing: 0.01em;
+}
 
 /* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .hp-hero { flex-direction: column !important; gap: 44px !important; }
+  .hp-static { display: none; }
 }
 @media (max-width: 640px) {
   .hp-feature-grid { grid-template-columns: 1fr !important; }

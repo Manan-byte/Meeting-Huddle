@@ -567,10 +567,13 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
   /** Rename meeting title (host only): emit to server. */
   const handleRenameTitle = useCallback(
     (title: string) => {
-      // Server resolves the room by `roomId`; without it the rename is a no-op.
-      if (room) socket?.emit(SOCKET_EVENTS.SET_MEETING_TITLE, { title, roomId: room.id });
+      if (!room) return;
+      // Optimistic local update — the header changes instantly, then the
+      // server broadcast (MEETING_TITLE_UPDATED) confirms for everyone.
+      setRoom({ ...room, meetingTitle: title });
+      socket?.emit(SOCKET_EVENTS.SET_MEETING_TITLE, { title, roomId: room.id });
     },
-    [socket, room],
+    [socket, room, setRoom],
   );
 
   /** Apply new settings: update local media + emit to server. */

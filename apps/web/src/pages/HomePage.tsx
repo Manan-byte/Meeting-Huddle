@@ -141,6 +141,14 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
   const showToast = (msg: string) => setToast(msg);
   const goTo = (v: "dashboard" | "schedule" | "history") => setActiveView(v);
 
+  /** Sign out with a confirmation prompt so accidental clicks don't log you out. */
+  const handleLogout = () => {
+    if (window.confirm("Are you sure you want to sign out?")) {
+      logout();
+      showToast("Signed out.");
+    }
+  };
+
   // Load real dashboard data from the server. Only signed-in users may
   // fetch history/schedule — the server rejects unauthenticated requests.
   useEffect(() => {
@@ -343,7 +351,7 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
             <div style={styles.navUser}>
               <span style={styles.navAvatar}>{(displayName[0] || "H").toUpperCase()}</span>
               <span style={styles.navName}>{displayName}</span>
-              <button className="hp-ghost" style={styles.signOutBtn} onClick={logout}>Sign out</button>
+              <button className="hp-ghost" style={styles.signOutBtn} onClick={handleLogout}>Sign out</button>
             </div>
           ) : (
             <>
@@ -425,7 +433,36 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
                 </div>
               </div>
 
-              {/* Mock video-call illustration removed — static demo tiles misled users into thinking it was a real meeting. */}
+              {/* Mock video-call illustration */}
+              <div className="hp-static" style={styles.heroRight}>
+                <div style={styles.mockFrame}>
+                  <div style={styles.mockTopbar}>
+                    <span style={styles.mockRec}><span style={styles.mockRecDot} />REC</span>
+                    <span style={styles.mockTime}>00:24</span>
+                    <span style={styles.mockIcons}>&bull;&bull;&bull;</span>
+                  </div>
+                  <div style={styles.mockGrid}>
+                    {[
+                      { name: "Alice", from: "#7c6cff", to: "#5658f0" },
+                      { name: "Bob", from: "#52a8ff", to: "#2f6bff" },
+                      { name: "You", from: "#8b6cff", to: "#5a4be8" },
+                      { name: "Carol", from: "#a78bfa", to: "#7c3aed" },
+                    ].map((p) => (
+                      <div key={p.name} style={styles.mockTile}>
+                        <div
+                          style={{
+                            ...styles.mockAvatar,
+                            background: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
+                          }}
+                        >
+                          {p.name[0]}
+                        </div>
+                        <span style={styles.mockName}>{p.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </section>
 
             {/* Feature strip */}
@@ -691,7 +728,10 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
         <footer className="hp-footer">
           <span className="hp-footer-mark">Huddle</span>
           <span className="hp-footer-line">
-            Powered by <span>LiveKit SFU</span> &middot; <span>Cloudflare Workers</span> &middot; <span>React</span> — free video meetings for up to 10 participants per room, right in your browser.
+            Powered by <span>LiveKit SFU</span> &middot; <span>Cloudflare Workers</span> &middot; <span>React</span>
+          </span>
+          <span className="hp-footer-copy">
+            Free video meetings for up to 10 participants per room &middot; &copy; {new Date().getFullYear()}
           </span>
         </footer>
       </main>
