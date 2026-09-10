@@ -43,6 +43,8 @@ function renderControlBar(overrides = {}) {
     onPushToTalkStop: vi.fn(),
     pushToTalkHotkey: " ",
     onPushToTalkHotkeyChange: vi.fn(),
+    isCaptionsEnabled: false,
+    onToggleCaptions: vi.fn(),
   };
   return { ...defaults, ...overrides };
 }

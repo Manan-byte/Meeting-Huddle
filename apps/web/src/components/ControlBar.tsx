@@ -38,6 +38,7 @@ import {
   Keyboard,
   Sun,
   Moon,
+  Captions,
 } from "lucide-react";
 import { useState } from "react";
 import type { LayoutMode } from "@meet-app/shared";
@@ -75,6 +76,10 @@ interface ControlBarProps {
   /** Whether the app is currently in dark mode. */
   isDark: boolean;
   onToggleDark: () => void;
+  /** Whether live captions are active for the room. */
+  isCaptionsEnabled: boolean;
+  /** Toggle live captions (emits to room). */
+  onToggleCaptions: () => void;
   layout: LayoutMode;
   onToggleReactions: () => void;
   onTogglePolls: () => void;
@@ -125,6 +130,8 @@ export function ControlBar({
   onToggleLock,
   isDark,
   onToggleDark,
+  isCaptionsEnabled,
+  onToggleCaptions,
   layout,
   onToggleReactions,
   onTogglePolls,
@@ -365,6 +372,13 @@ export function ControlBar({
                 />
               </div>
               <div style={styles.moreDivider} />
+              <button
+                className="ctl-more-item"
+                style={styles.moreItem}
+                onClick={() => { onToggleCaptions(); setShowMore(false); }}
+              >
+                <Captions size={16} /> {isCaptionsEnabled ? "Hide Captions" : "Live Captions"}
+              </button>
               <button
                 className="ctl-more-item"
                 style={styles.moreItem}

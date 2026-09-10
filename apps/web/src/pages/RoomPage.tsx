@@ -140,6 +140,12 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
       setCurrentUser(data.user);
       setParticipants(data.room.participants);
       setIsInWaitingRoom(false);
+      // Server sends CHAT_HISTORY right after ROOM_JOINED on admit — the
+      // main listener effect (guarded by `room`) hasn't mounted its listener
+      // yet, so capture history here or it's dropped.
+      socket.once(SOCKET_EVENTS.CHAT_HISTORY, (history) => {
+        if (Array.isArray(history)) setMessages(history as ChatMessage[]);
+      });
     };
     const handleWaitingStatus = (data: { waiting: boolean }) => {
       setIsInWaitingRoom(data.waiting);
@@ -546,11 +552,13 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
     [socket, room],
   );
 
-  /** Apply new settings: update local WebRTC media + emit to server. */
+  /** Apply new settings: update local media + emit to server. */
   const handleApplySettings = useCallback(
     (newSettings: MeetingSettings) => {
-      applySettings(newSettings);
-      socket?.emit(SOCKET_EVENTS.UPDATE_SETTINGS, newSettings);
+      void applySettings(newSettings);
+      // Server reads `data.settings` — sending the bare object silently
+      // broadcast `{ settings: undefined }` to the room.
+      socket?.emit(SOCKET_EVENTS.UPDATE_SETTINGS, { settings: newSettings });
     },
     [applySettings, socket],
   );
@@ -558,6 +566,14 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
   // ── New feature handlers ─────────────────────────────────────────────
   /** Toggle the reaction bar visibility. */
   const handleToggleReactions = useCallback(() => setShowReactions((v) => !v), []);
+
+  /** Toggle live captions for the whole room (broadcast to all). */
+  const handleToggleCaptions = useCallback(() => {
+    if (!socket) return;
+    const next = !isCaptionEnabled;
+    setIsCaptionEnabled(next);
+    socket.emit(SOCKET_EVENTS.CAPTION_TOGGLE, { enabled: next });
+  }, [socket, isCaptionEnabled]);
 
   /** Send an emoji reaction via socket. */
   const handleReact = useCallback(
@@ -793,6 +809,8 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
         onPushToTalkStop={pushToTalk.stopTalking}
         pushToTalkHotkey={pushToTalkHotkey}
         onPushToTalkHotkeyChange={setPushToTalkHotkey}
+        isCaptionsEnabled={isCaptionEnabled}
+        onToggleCaptions={handleToggleCaptions}
       />
 
       {/* ── Modals (overlay panels) ────────────────────────────────── */}

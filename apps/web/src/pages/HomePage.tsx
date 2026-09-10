@@ -32,7 +32,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { SOCKET_EVENTS } from "@meet-app/shared";
-import type { Room, User } from "@meet-app/shared";
+import type { Room, User, ChatMessage } from "@meet-app/shared";
 import { useSocket } from "../contexts/SocketContext";
 import { useRoom } from "../contexts/RoomContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -109,7 +109,7 @@ function formatSchedTime(hhmm: string): string {
 
 export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
   const { socket } = useSocket();
-  const { setRoom, setCurrentUser, setParticipants } = useRoom();
+  const { setRoom, setCurrentUser, setParticipants, setMessages } = useRoom();
   const { user, loading: authLoading, login, register, logout, token } = useAuth();
 
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
@@ -243,6 +243,12 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
       setIsCreating(false);
       setPreviewing(null);
       onJoinRoom();
+    });
+    // The server sends CHAT_HISTORY immediately after ROOM_JOINED (same WS
+    // dispatch tick). Register before the room view mounts, or the history
+    // message is dropped while no listener exists yet.
+    socket.once(SOCKET_EVENTS.CHAT_HISTORY, (history) => {
+      if (Array.isArray(history)) setMessages(history as ChatMessage[]);
     });
     socket.once(SOCKET_EVENTS.ROOM_FULL, () => {
       setError("Room is full.");

@@ -270,8 +270,10 @@ export class HuddleDO implements DurableObject {
         }
 
         case SOCKET_EVENTS.LEAVE_ROOM: {
-          const code = String(data.code ?? "").toUpperCase();
-          const room = this.leaveRoom(code, userId);
+          // Client never sends a code — resolve the room from the socket id.
+          const room = this.roomOf(userId);
+          const code = room?.code ?? "";
+          this.leaveRoom(code, userId);
           this.broadcast(code, SOCKET_EVENTS.PARTICIPANT_LEFT, {
             userId,
             participants: room?.participants ?? [],
@@ -497,7 +499,7 @@ export class HuddleDO implements DurableObject {
 
         case SOCKET_EVENTS.CAPTION_TOGGLE: {
           const room = this.roomOf(userId);
-          if (room) this.broadcast(room.code, SOCKET_EVENTS.CAPTIONS_ENABLED, { enabled: true });
+          if (room) this.broadcast(room.code, SOCKET_EVENTS.CAPTIONS_ENABLED, { enabled: Boolean(data.enabled) });
           break;
         }
 

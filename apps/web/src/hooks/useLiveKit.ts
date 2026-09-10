@@ -21,6 +21,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track, createLocalAudioTrack, createLocalVideoTrack } from "livekit-client";
 import type { LocalVideoTrack, LocalAudioTrack } from "livekit-client";
+import { RESOLUTION_PRESETS } from "@meet-app/shared";
 import type { MeetingSettings } from "@meet-app/shared";
 
 /** Options passed to the useLiveKit hook. */
@@ -53,6 +54,9 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     backgroundBlur: false,
     virtualBackground: null,
   });
+  /** Latest settings, readable from the applySettings callback. */
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   const roomRef = useRef<Room | null>(null);
   /** The participant id of the local user once connected. */
@@ -192,6 +196,83 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     else await cam.unmute();
   }, []);
 
+  /** Swap the published camera track for a new device/resolution one. */
+  const swapCamera = useCallback(async (deviceId: string | null, resolution: string) => {
+    const old = localCamRef.current;
+    const room = roomRef.current;
+    const preset = RESOLUTION_PRESETS[resolution] ?? RESOLUTION_PRESETS["720p"];
+    const constraints = {
+      width: { ideal: preset.width },
+      height: { ideal: preset.height },
+      frameRate: { ideal: preset.frameRate },
+      ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+    };
+    const cam = await createLocalVideoTrack(constraints);
+    if (old) {
+      try {
+        room?.localParticipant.unpublishTrack(old);
+      } catch {
+        /* track may already be unpublished */
+      }
+      old.stop();
+    }
+    localCamRef.current = cam;
+    try {
+      await room?.localParticipant.publishTrack(cam);
+    } catch (err) {
+      console.error("Failed to publish camera track:", err);
+    }
+    return cam;
+  }, []);
+
+  /** Swap the published microphone track for a new device one. */
+  const swapMic = useCallback(async (deviceId: string | null) => {
+    const old = localMicRef.current;
+    const room = roomRef.current;
+    const constraints: MediaTrackConstraints = deviceId ? { deviceId: { exact: deviceId } } : {};
+    const mic = await createLocalAudioTrack(constraints);
+    if (old) {
+      try {
+        room?.localParticipant.unpublishTrack(old);
+      } catch {
+        /* track may already be unpublished */
+      }
+      old.stop();
+    }
+    localMicRef.current = mic;
+    try {
+      await room?.localParticipant.publishTrack(mic);
+    } catch (err) {
+      console.error("Failed to publish mic track:", err);
+    }
+    return mic;
+  }, []);
+
+  /** Apply new settings: switch camera/mic/resolution for real, keep state. */
+  const applySettings = useCallback(
+    async (next: MeetingSettings) => {
+      const prev = settingsRef.current;
+      const camChanged = next.videoDevice !== prev.videoDevice || next.resolution !== prev.resolution;
+      const micChanged = next.audioDevice !== prev.audioDevice;
+      setSettings(next);
+
+      if (camChanged || micChanged) {
+        try {
+          const [mic, cam] = await Promise.all([
+            micChanged ? swapMic(next.audioDevice || null) : Promise.resolve(localMicRef.current),
+            camChanged ? swapCamera(next.videoDevice || null, next.resolution) : Promise.resolve(localCamRef.current),
+          ]);
+          if (mic && cam && !screenStream) {
+            setLocalStream(new MediaStream([mic.mediaStreamTrack, cam.mediaStreamTrack]));
+          }
+        } catch (err) {
+          console.error("Failed to switch media device:", err);
+        }
+      }
+    },
+    [swapCamera, swapMic, screenStream],
+  );
+
   /** Stop screen share and restore the camera as the primary video. */
   const stopScreenShare = useCallback(() => {
     const track = screenTrackRef.current;
@@ -241,6 +322,6 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     toggleScreenShare,
     isScreenSharing,
     settings,
-    applySettings: async (next: MeetingSettings) => setSettings(next),
+    applySettings,
   };
 }
