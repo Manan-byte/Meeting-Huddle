@@ -106,9 +106,12 @@ const styles: Record<string, CSSProperties> = {
   },
   clearVideo: {
     position: "relative",
-    width: "100%",
-    height: "100%",
+    width: "calc(100% - 20px)",
+    height: "calc(100% - 20px)",
     objectFit: "cover",
     display: "block",
+    borderRadius: 12,
+    margin: 10,
+    zIndex: 2,
   },
 };

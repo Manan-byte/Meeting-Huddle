@@ -12,7 +12,7 @@
  *              VideoPlayer (renders each video tile)
  */
 
-import type { User } from "@meet-app/shared";
+import type { User, MeetingSettings } from "@meet-app/shared";
 import { VideoPlayer } from "./VideoPlayer";
 
 interface SpeakerViewProps {
@@ -26,6 +26,8 @@ interface SpeakerViewProps {
   participants: User[];
   /** The local user (null before joining). */
   currentUser: User | null;
+  /** Meeting settings — background blur/virtual background for the local tile. */
+  settings?: MeetingSettings;
 }
 
 /**
@@ -39,6 +41,7 @@ export function SpeakerView({
   remoteStreams,
   participants,
   currentUser,
+  settings,
 }: SpeakerViewProps) {
   // Pick the most recent non-local participant as "speaker", or fall back to local
   const remoteParticipants = participants.filter((p) => p.id !== currentUser?.id);
@@ -69,6 +72,8 @@ export function SpeakerView({
             isVideoOff={speaker.isVideoOff}
             isLocal={speaker.id === currentUser?.id}
             isHandRaised={speaker.isHandRaised}
+            backgroundBlur={settings?.backgroundBlur}
+            virtualBackground={settings?.virtualBackground}
           />
         )}
       </div>

@@ -58,6 +58,7 @@ export function VideoGrid({
         remoteStreams={remoteStreams}
         participants={participants}
         currentUser={currentUser}
+        settings={settings}
       />
     );
   }
@@ -75,6 +76,8 @@ export function VideoGrid({
               isVideoOff={currentUser.isVideoOff}
               isLocal
               isHandRaised={currentUser.isHandRaised}
+              backgroundBlur={settings?.backgroundBlur}
+              virtualBackground={settings?.virtualBackground}
             />
           )}
         </div>

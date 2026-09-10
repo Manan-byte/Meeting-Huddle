@@ -46,13 +46,23 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
   // Real settings state. SettingsPanel reads `settings.resolution` etc. on
   // mount — returning `null as never` made it throw "Cannot read properties
   // of null" and unmount the whole app whenever Settings was opened.
-  const [settings, setSettings] = useState<MeetingSettings>({
-    title: "",
-    resolution: "720p",
-    audioDevice: "",
-    videoDevice: "",
-    backgroundBlur: false,
-    virtualBackground: null,
+  const [settings, setSettings] = useState<MeetingSettings>(() => {
+    // Carry the background chosen in the PreJoinScreen lobby into the room.
+    let prejoin: { backgroundBlur?: boolean; virtualBackground?: string | null } | null = null;
+    try {
+      const raw = sessionStorage.getItem("huddle_prejoin_settings");
+      if (raw) prejoin = JSON.parse(raw);
+    } catch {
+      /* ignore */
+    }
+    return {
+      title: "",
+      resolution: "720p",
+      audioDevice: "",
+      videoDevice: "",
+      backgroundBlur: prejoin?.backgroundBlur ?? false,
+      virtualBackground: prejoin?.virtualBackground ?? null,
+    };
   });
   /** Latest settings, readable from the applySettings callback. */
   const settingsRef = useRef(settings);
