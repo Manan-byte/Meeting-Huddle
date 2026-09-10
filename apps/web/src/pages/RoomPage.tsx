@@ -540,9 +540,10 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
   /** Rename meeting title (host only): emit to server. */
   const handleRenameTitle = useCallback(
     (title: string) => {
-      socket?.emit(SOCKET_EVENTS.SET_MEETING_TITLE, { title });
+      // Server resolves the room by `roomId`; without it the rename is a no-op.
+      if (room) socket?.emit(SOCKET_EVENTS.SET_MEETING_TITLE, { title, roomId: room.id });
     },
-    [socket],
+    [socket, room],
   );
 
   /** Apply new settings: update local WebRTC media + emit to server. */

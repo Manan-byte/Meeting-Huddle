@@ -21,6 +21,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track, createLocalAudioTrack, createLocalVideoTrack } from "livekit-client";
 import type { LocalVideoTrack, LocalAudioTrack } from "livekit-client";
+import type { MeetingSettings } from "@meet-app/shared";
 
 /** Options passed to the useLiveKit hook. */
 interface UseLiveKitOptions {
@@ -41,6 +42,17 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  // Real settings state. SettingsPanel reads `settings.resolution` etc. on
+  // mount — returning `null as never` made it throw "Cannot read properties
+  // of null" and unmount the whole app whenever Settings was opened.
+  const [settings, setSettings] = useState<MeetingSettings>({
+    title: "",
+    resolution: "720p",
+    audioDevice: "",
+    videoDevice: "",
+    backgroundBlur: false,
+    virtualBackground: null,
+  });
 
   const roomRef = useRef<Room | null>(null);
   /** The participant id of the local user once connected. */
@@ -228,8 +240,7 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     toggleVideo,
     toggleScreenShare,
     isScreenSharing,
-    // Settings are applied client-side only (LiveKit auto-negotiates).
-    settings: null as never,
-    applySettings: async (_s: unknown) => {},
+    settings,
+    applySettings: async (next: MeetingSettings) => setSettings(next),
   };
 }
