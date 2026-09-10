@@ -221,6 +221,12 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
       setIsCreating(false);
       setPreviewing(null);
     });
+    socket.once("error", (msg) => {
+      const raw = typeof msg === "string" ? msg : msg?.message ?? "";
+      setError(raw || "Could not create the meeting. Please try again.");
+      setIsCreating(false);
+      setPreviewing(null);
+    });
   };
 
   const handleJoin = () => {
@@ -257,6 +263,16 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
     });
     socket.once(SOCKET_EVENTS.ROOM_LOCKED, () => {
       setError("Room is locked.");
+      setIsCreating(false);
+      setPreviewing(null);
+    });
+    socket.once("error", (msg) => {
+      const raw = typeof msg === "string" ? msg : msg?.message ?? "";
+      const friendly =
+        raw === "Room not found"
+          ? "Meeting not found — it may have ended. Ask the host for a new code, or start your own meeting. (No account needed.)"
+          : raw || "Could not join the meeting. Please try again.";
+      setError(friendly);
       setIsCreating(false);
       setPreviewing(null);
     });
@@ -394,6 +410,11 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
                       <ArrowRight size={16} /> Join
                     </button>
                   </div>
+
+                  <p style={styles.heroHint}>
+                    No account needed to join — just enter a name. (Sign in only unlocks
+                    scheduling &amp; history.)
+                  </p>
 
                   {error && (
                     <div style={styles.error}>
@@ -1220,6 +1241,14 @@ hero: {
     textTransform: "uppercase",
     textAlign: "center",
     fontSize: 16,
+  },
+  heroHint: {
+    margin: "10px 6px 0",
+    fontSize: 12,
+    fontWeight: 500,
+    color: "var(--text-dim)",
+    textAlign: "center",
+    lineHeight: 1.5,
   },
   error: {
     display: "flex",
