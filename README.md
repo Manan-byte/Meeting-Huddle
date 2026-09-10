@@ -48,6 +48,7 @@ live captions, dan perekaman. Rapat bisa dijadwalkan dan diundangkan lewat email
 |---|---|
 | 🎥 **Video/Audio** | LiveKit SFU — mute, kamera on/off, indikator berbicara, hingga 10 peserta/ruang (dapat dinaikkan). Error kamera/mik (izin ditolak, device dipakai, server media mati) ditampilkan jelas di layar |
 | 🔊 **Anti-noise** | Toggle noise suppression — filter noise latar (AC, keyboard) sebelum dikirim ke peserta lain (RNNoise browser-native, zero dependency) |
+| 🔇 **Moderasi mute (host)** | Mute per-peserta (klik ikon mic di daftar peserta) + **Mute all** (Discord-style) — host mematikan mikrofon peserta lain dari jarak jauh |
 | 🖥️ **Screen share** | Bagikan layar dengan preview sendiri sebelum mulai |
 | 💬 **Chat & reaksi** | Chat realtime antar peserta + reaksi emoji |
 | 🙋 **Engage** | Angkat tangan, polling, live captions (Web Speech API), push-to-talk |

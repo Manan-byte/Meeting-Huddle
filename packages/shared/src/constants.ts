@@ -46,6 +46,16 @@ export const SOCKET_EVENTS = {
   TOGGLE_MUTE: "toggle:mute",
   /** Client → Server: toggle camera on/off state. */
   TOGGLE_VIDEO: "toggle:video",
+  /** Client → Server (host only): mute a specific participant. */
+  HOST_MUTE_USER: "host:mute-user",
+  /** Client → Server (host only): unmute a specific participant. */
+  HOST_UNMUTE_USER: "host:unmute-user",
+  /** Client → Server (host only): mute all participants (Discord-style). */
+  HOST_MUTE_ALL: "host:mute-all",
+  /** Server → Client: force the local microphone muted (host action). */
+  FORCE_MUTE: "force:mute",
+  /** Server → Client: force the local microphone unmuted (host action). */
+  FORCE_UNMUTE: "force:unmute",
 
   // ── WebRTC signaling ─────────────────────────────────────────────────
   /** Client ↔ Server ↔ Client: relay of SDP offers, answers, and ICE candidates. */

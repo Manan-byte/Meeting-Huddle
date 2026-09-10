@@ -12,6 +12,7 @@
  */
 
 import type { User } from "@meet-app/shared";
+import { Mic, MicOff, VolumeX } from "lucide-react";
 import "../styles/ParticipantList.css";
 
 interface ParticipantListProps {
@@ -19,13 +20,31 @@ interface ParticipantListProps {
   participants: User[];
   /** The local user (null before joining). */
   currentUser: User | null;
+  /** True when the local user is the room host (shows moderation controls). */
+  isHost: boolean;
+  /** Host action: mute a specific participant. */
+  onMuteUser?: (userId: string) => void;
+  /** Host action: unmute a specific participant. */
+  onUnmuteUser?: (userId: string) => void;
+  /** Host action: mute all participants (Discord-style). */
+  onMuteAll?: () => void;
 }
 
 /**
  * Renders a scrollable list of all room participants.
  * Each participant shows avatar, name, role, and status badges.
+ * The host (isHost) gets per-user mute/unmute buttons and a "Mute all"
+ * button in the header.
  */
-export function ParticipantList({ participants, currentUser }: ParticipantListProps) {
+export function ParticipantList({
+  participants,
+  currentUser,
+  isHost,
+  onMuteUser,
+  onUnmuteUser,
+  onMuteAll,
+}: ParticipantListProps) {
+  const others = participants.filter((p) => !p.isHost);
   return (
     <div style={styles.container}>
       <header style={styles.header}>
@@ -33,6 +52,16 @@ export function ParticipantList({ participants, currentUser }: ParticipantListPr
           Participants
           <span style={styles.count}>{participants.length}</span>
         </h3>
+        {isHost && others.length > 0 && (
+          <button
+            className="pl-muteall"
+            style={styles.muteAllBtn}
+            onClick={onMuteAll}
+            title="Mute all participants"
+          >
+            <VolumeX size={14} /> Mute all
+          </button>
+        )}
       </header>
       <ul style={styles.list}>
         {participants.map((p, i) => (
@@ -41,6 +70,9 @@ export function ParticipantList({ participants, currentUser }: ParticipantListPr
             participant={p}
             isYou={p.id === currentUser?.id}
             hasDivider={i < participants.length - 1}
+            showModeration={isHost && !p.isHost && p.id !== currentUser?.id}
+            onMuteUser={onMuteUser}
+            onUnmuteUser={onUnmuteUser}
           />
         ))}
       </ul>
@@ -53,10 +85,16 @@ function ParticipantRow({
   participant,
   isYou,
   hasDivider,
+  showModeration,
+  onMuteUser,
+  onUnmuteUser,
 }: {
   participant: User;
   isYou: boolean;
   hasDivider: boolean;
+  showModeration?: boolean;
+  onMuteUser?: (userId: string) => void;
+  onUnmuteUser?: (userId: string) => void;
 }) {
   return (
     <li
@@ -97,6 +135,20 @@ function ParticipantRow({
           <span style={styles.noVideoBadge} title="Video off">
             <CamOffIcon />
           </span>
+        )}
+        {showModeration && (
+          <button
+            className="pl-mutebtn"
+            style={{ ...styles.muteBtn, ...(participant.isMuted ? styles.muteBtnActive : null) }}
+            onClick={() =>
+              participant.isMuted
+                ? onUnmuteUser?.(participant.id)
+                : onMuteUser?.(participant.id)
+            }
+            title={participant.isMuted ? "Unmute participant" : "Mute participant"}
+          >
+            {participant.isMuted ? <Mic size={13} /> : <MicOff size={13} />}
+          </button>
         )}
       </div>
     </li>
@@ -175,6 +227,39 @@ const styles: Record<string, React.CSSProperties> = {
     background: "var(--bg-soft)",
     padding: "2px 8px",
     borderRadius: 999,
+  },
+  muteAllBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
+    padding: "4px 10px",
+    fontSize: 11,
+    fontWeight: 600,
+    borderRadius: 999,
+    border: "1px solid var(--border)",
+    background: "var(--bg-soft)",
+    color: "var(--text)",
+    cursor: "pointer",
+  },
+  muteBtn: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 24,
+    height: 24,
+    borderRadius: "50%",
+    border: "1px solid var(--border)",
+    background: "var(--bg-soft)",
+    color: "var(--text-dim)",
+    cursor: "pointer",
+    opacity: 0,
+    transition: "opacity var(--motion-fast) var(--ease-standard)",
+  },
+  muteBtnActive: {
+    opacity: 1,
+    background: "color-mix(in srgb, var(--danger) 14%, transparent)",
+    borderColor: "color-mix(in srgb, var(--danger) 35%, transparent)",
+    color: "var(--danger)",
   },
   list: {
     listStyle: "none",

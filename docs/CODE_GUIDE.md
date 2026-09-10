@@ -165,7 +165,7 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 | `LiveCaptions` | Web Speech API → segment streaming ke room. |
 | `MeetingTimer` | Timer meeting (startedAt → HH:MM:SS). |
 | `MeetingTitle` | Edit judul meeting (host). |
-| `ParticipantList` | Daftar peserta dengan status mic/kamera, host crown, "You". |
+| `ParticipantList` | Daftar peserta dengan status mic/kamera, host crown, "You"; host punya tombol mute per-peserta + "Mute all". |
 | `PollModal` | Buat/vote/tutup polling. |
 | `PreJoinScreen` | Lobby pre-join: preview kamera, pilih device, nama. |
 | `ReactionBar` / `ReactionOverlay` | Pilih emoji + animasi floating. |

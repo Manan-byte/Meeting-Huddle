@@ -486,6 +486,21 @@ Reactions, Polls, Live Captions, AI Companion, Virtual Background, Settings Pane
 
 ## Changelog — Recent Fixes & Improvements
 
+### Host moderation: mute per-user & mute all (Discord-style)
+- **Mute per-peserta**: di panel **Participants**, host melihat ikon mic di tiap baris peserta
+  non-host (muncul saat hover) → klik mematikan mikrofon peserta itu dari jarak jauh.
+- **Mute all**: tombol **"Mute all"** di header panel Participants (host only) mematikan
+  mikrofon semua peserta sekaligus (kecuali host sendiri) — seperti Discord mute room.
+- **Event baru** (`shared/constants.ts`): `host:mute-user`, `host:unmute-user`,
+  `host:mute-all` (client→server), `force:mute`, `force:unmute` (server→client).
+- **Server** (`huddleDO.ts`): verifikasi sender adalah host; set `isMuted` target;
+  broadcast `toggle:mute` ke semua + kirim `force:mute`/`force:unmute` ke socket target
+  agar **track mikrofon lokal** benar-benar dibisukan (bukan sekadar badge).
+- **Client** (`RoomPage`, `ParticipantList`): listener `force:mute`/`force:unmute` memanggil
+  `setMute` (LiveKit) + sinkron state; UI moderasi hanya tampil untuk host.
+- **Terverifikasi E2E**: host mute Budi → mic Budi bisu (tombol "Unmute"); host "Mute all"
+  → Budi & Citra keduanya bisu.
+
 ### Refactor arsitektur + cleanup UI + feedback error media
 - **File raksasa dipecah**: `HomePage.tsx` (1865 → ~730 baris) & `RoomPage.tsx` (1064 →
   861 baris) dengan mengekstrak seluruh inline-style ke `src/pages/home/styles.ts` dan

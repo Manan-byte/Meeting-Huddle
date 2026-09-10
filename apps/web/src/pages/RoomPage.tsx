@@ -268,6 +268,19 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
       updateParticipant(data.userId, { isMuted: data.isMuted });
     };
 
+    // Host forced the LOCAL mic muted/unmuted (host moderation) — apply to
+    // the actual track so the mic really goes silent, plus keep state in sync.
+    const handleForceMute = () => {
+      if (!currentUser) return;
+      setMute(true);
+      updateParticipant(currentUser.id, { isMuted: true });
+    };
+    const handleForceUnmute = () => {
+      if (!currentUser) return;
+      setMute(false);
+      updateParticipant(currentUser.id, { isMuted: false });
+    };
+
     // Video state changed by another participant
     const handleVideoToggle = (data: { userId: string; isVideoOff: boolean }) => {
       updateParticipant(data.userId, { isVideoOff: data.isVideoOff });
@@ -373,6 +386,8 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
     socket.on(SOCKET_EVENTS.PARTICIPANT_LEFT, handleParticipantLeft);
     socket.on(SOCKET_EVENTS.TOGGLE_MUTE, handleMuteToggle);
     socket.on(SOCKET_EVENTS.TOGGLE_VIDEO, handleVideoToggle);
+    socket.on(SOCKET_EVENTS.FORCE_MUTE, handleForceMute);
+    socket.on(SOCKET_EVENTS.FORCE_UNMUTE, handleForceUnmute);
     socket.on(SOCKET_EVENTS.CHAT_MESSAGE, handleChatMessage);
     socket.on(SOCKET_EVENTS.CHAT_HISTORY, handleChatHistory);
     socket.on(SOCKET_EVENTS.HAND_RAISE, handleHandRaise);
@@ -396,6 +411,8 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
       socket.off(SOCKET_EVENTS.PARTICIPANT_LEFT, handleParticipantLeft);
       socket.off(SOCKET_EVENTS.TOGGLE_MUTE, handleMuteToggle);
       socket.off(SOCKET_EVENTS.TOGGLE_VIDEO, handleVideoToggle);
+      socket.off(SOCKET_EVENTS.FORCE_MUTE, handleForceMute);
+      socket.off(SOCKET_EVENTS.FORCE_UNMUTE, handleForceUnmute);
       socket.off(SOCKET_EVENTS.CHAT_MESSAGE, handleChatMessage);
       socket.off(SOCKET_EVENTS.CHAT_HISTORY, handleChatHistory);
       socket.off(SOCKET_EVENTS.HAND_RAISE, handleHandRaise);
@@ -611,6 +628,27 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
     [socket],
   );
 
+  /** Host mutes a specific participant (server force-mutes their mic). */
+  const handleMuteUser = useCallback(
+    (userId: string) => {
+      socket?.emit(SOCKET_EVENTS.HOST_MUTE_USER, { userId });
+    },
+    [socket],
+  );
+
+  /** Host unmutes a specific participant. */
+  const handleUnmuteUser = useCallback(
+    (userId: string) => {
+      socket?.emit(SOCKET_EVENTS.HOST_UNMUTE_USER, { userId });
+    },
+    [socket],
+  );
+
+  /** Host mutes everyone except themselves (Discord-style mute room). */
+  const handleMuteAll = useCallback(() => {
+    socket?.emit(SOCKET_EVENTS.HOST_MUTE_ALL);
+  }, [socket]);
+
   // ════════════════════════════════════════════════════════════════════
   // RENDER: Special states (meeting ended, waiting room)
   // ════════════════════════════════════════════════════════════════════
@@ -759,7 +797,14 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
           }}
         >
           {showParticipants && (
-            <ParticipantList participants={participants} currentUser={currentUser} />
+            <ParticipantList
+              participants={participants}
+              currentUser={currentUser}
+              isHost={currentUser?.isHost ?? false}
+              onMuteUser={handleMuteUser}
+              onUnmuteUser={handleUnmuteUser}
+              onMuteAll={handleMuteAll}
+            />
           )}
 {showChat && (
           <ChatPanel

@@ -336,6 +336,34 @@ export class HuddleDO implements DurableObject {
           break;
         }
 
+        // ── Host moderation: mute per-user / mute all (Discord-style) ──
+        case SOCKET_EVENTS.HOST_MUTE_USER:
+        case SOCKET_EVENTS.HOST_UNMUTE_USER: {
+          const room = this.roomOf(userId);
+          if (!room || room.hostId !== userId) return; // host only
+          const targetId = String((data as { userId?: string }).userId ?? "");
+          const target = room.participants.find((x) => x.id === targetId);
+          if (!target || target.isHost) return; // can't moderate the host
+          const muted = event === SOCKET_EVENTS.HOST_MUTE_USER;
+          target.isMuted = muted;
+          this.broadcast(room.code, SOCKET_EVENTS.TOGGLE_MUTE, { userId: targetId, isMuted: muted });
+          // Tell the target client to mute/unmute its LOCAL mic track.
+          this.sendTo(targetId, muted ? SOCKET_EVENTS.FORCE_MUTE : SOCKET_EVENTS.FORCE_UNMUTE, {});
+          break;
+        }
+
+        case SOCKET_EVENTS.HOST_MUTE_ALL: {
+          const room = this.roomOf(userId);
+          if (!room || room.hostId !== userId) return; // host only
+          for (const p of room.participants) {
+            if (p.isHost) continue; // host keeps talking
+            p.isMuted = true;
+            this.broadcast(room.code, SOCKET_EVENTS.TOGGLE_MUTE, { userId: p.id, isMuted: true });
+            this.sendTo(p.id, SOCKET_EVENTS.FORCE_MUTE, {});
+          }
+          break;
+        }
+
         // ── Signaling relay ───────────────────────────────────────────
         case SOCKET_EVENTS.SIGNAL: {
           const room = this.roomOf(userId);
