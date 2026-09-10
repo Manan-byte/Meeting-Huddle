@@ -6,9 +6,10 @@
   background: var(--bg-soft);
 }
 
-/* Host moderation: reveal the per-user mute button on row hover */
+/* Host moderation: mute button per user is always visible for hosts */
 .pl-row:hover .pl-mutebtn {
-  opacity: 1;
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-soft));
+  color: var(--text);
 }
 
 .pl-muteall:hover {
@@ -18,7 +19,6 @@
 }
 
 .pl-mutebtn:hover {
-  opacity: 1 !important;
   background: color-mix(in srgb, var(--danger) 14%, transparent) !important;
   border-color: color-mix(in srgb, var(--danger) 35%, var(--border)) !important;
   color: var(--danger) !important;

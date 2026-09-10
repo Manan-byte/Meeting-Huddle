@@ -63,6 +63,11 @@ export function ParticipantList({
           </button>
         )}
       </header>
+      {isHost && others.length > 0 && (
+        <p style={styles.moderateHint}>
+          Click the mic icon next to a participant to mute/unmute them
+        </p>
+      )}
       <ul style={styles.list}>
         {participants.map((p, i) => (
           <ParticipantRow
@@ -241,6 +246,13 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--text)",
     cursor: "pointer",
   },
+  moderateHint: {
+    margin: 0,
+    padding: "0 16px 8px",
+    fontSize: 11,
+    color: "var(--text-dim)",
+    fontStyle: "italic",
+  },
   muteBtn: {
     display: "flex",
     alignItems: "center",
@@ -252,8 +264,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: "var(--bg-soft)",
     color: "var(--text-dim)",
     cursor: "pointer",
-    opacity: 0,
-    transition: "opacity var(--motion-fast) var(--ease-standard)",
+    transition: "background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard)",
   },
   muteBtnActive: {
     opacity: 1,
