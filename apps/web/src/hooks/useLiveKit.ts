@@ -70,6 +70,9 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
   const screenTrackRef = useRef<LocalVideoTrack | null>(null);
   /** Tracked local mic mute state (LiveKit has no reliable muted getter). */
   const micMutedRef = useRef(false);
+  /** Whether noise suppression / echo cancellation is active on the mic. */
+  const noiseRef = useRef(false);
+  const [noiseSuppression, setNoiseSuppression] = useState(false);
 
   // ── Room connect / disconnect ──────────────────────────────────────
   useEffect(() => {
@@ -226,10 +229,19 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
   }, []);
 
   /** Swap the published microphone track for a new device one. */
-  const swapMic = useCallback(async (deviceId: string | null) => {
+  const swapMic = useCallback(async (deviceId: string | null, noiseOn?: boolean) => {
     const old = localMicRef.current;
     const room = roomRef.current;
-    const constraints: MediaTrackConstraints = deviceId ? { deviceId: { exact: deviceId } } : {};
+    const useNoise = noiseOn ?? noiseRef.current;
+    // Browser-native audio processing (RNNoise engine in Chrome/Edge):
+    // noise suppression kills background noise, echo cancellation removes
+    // speaker feedback, auto gain keeps levels stable. Zero dependencies.
+    const constraints: MediaTrackConstraints = {
+      ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+      ...(useNoise
+        ? { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
+        : {}),
+    };
     const mic = await createLocalAudioTrack(constraints);
     if (old) {
       try {
@@ -247,6 +259,23 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     }
     return mic;
   }, []);
+
+  /** Toggle browser-native noise suppression on/off (re-acquires the mic). */
+  const toggleNoiseSuppression = useCallback(async () => {
+    const next = !noiseRef.current;
+    noiseRef.current = next;
+    setNoiseSuppression(next);
+    try {
+      const mic = await swapMic(settingsRef.current.audioDevice || null, next);
+      if (mic && localCamRef.current && !screenStream) {
+        setLocalStream(new MediaStream([mic.mediaStreamTrack, localCamRef.current.mediaStreamTrack]));
+      }
+    } catch (err) {
+      console.error("Failed to switch noise suppression:", err);
+      noiseRef.current = !next;
+      setNoiseSuppression(!next);
+    }
+  }, [swapMic, screenStream]);
 
   /** Apply new settings: switch camera/mic/resolution for real, keep state. */
   const applySettings = useCallback(
@@ -323,5 +352,7 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     isScreenSharing,
     settings,
     applySettings,
+    noiseSuppression,
+    toggleNoiseSuppression,
   };
 }

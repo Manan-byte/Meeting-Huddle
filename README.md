@@ -47,6 +47,7 @@ live captions, dan perekaman. Rapat bisa dijadwalkan dan diundangkan lewat email
 | Area | Detail |
 |---|---|
 | 🎥 **Video/Audio** | LiveKit SFU — mute, kamera on/off, indikator berbicara, hingga 10 peserta/ruang (dapat dinaikkan) |
+| 🔊 **Anti-noise** | Toggle noise suppression — filter noise latar (AC, keyboard) sebelum dikirim ke peserta lain (RNNoise browser-native, zero dependency) |
 | 🖥️ **Screen share** | Bagikan layar dengan preview sendiri sebelum mulai |
 | 💬 **Chat & reaksi** | Chat realtime antar peserta + reaksi emoji |
 | 🙋 **Engage** | Angkat tangan, polling, live captions (Web Speech API), push-to-talk |
@@ -77,6 +78,8 @@ Huddle memakai **email/password** (tanpa OAuth Google/GitHub).
 - **Sesi** disimpan di `localStorage` — refresh/reload tidak mengeluarkan Anda.
 - **Join rapat tidak wajib akun** — akun hanya meng-gate dashboard, schedule, dan history.
   Aplikasi lain hanya butuh kode ruang.
+- **Nama wajib diisi** sebelum buat/join rapat — kalau kosong, tombol menampilkan pesan
+  "Please enter your name first…". Saat sudah login, nama akun terisi otomatis.
 
 ## Arsitektur
 

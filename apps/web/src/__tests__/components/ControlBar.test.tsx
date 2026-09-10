@@ -45,6 +45,8 @@ function renderControlBar(overrides = {}) {
     onPushToTalkHotkeyChange: vi.fn(),
     isCaptionsEnabled: false,
     onToggleCaptions: vi.fn(),
+    isNoiseSuppression: false,
+    onToggleNoiseSuppression: vi.fn(),
   };
   return { ...defaults, ...overrides };
 }
@@ -185,6 +187,22 @@ describe("ControlBar", () => {
 
     const button = screen.getByTitle("Push to talk — hold to talk (Space)");
     expect(button).toBeInTheDocument();
+  });
+
+  it("shows noise suppression off button and toggles on click", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+
+    expect(screen.getByTitle("Noise suppression off — click to filter background noise")).toBeInTheDocument();
+    await user.click(screen.getByTitle(/Noise suppression off/));
+    expect(props.onToggleNoiseSuppression).toHaveBeenCalledOnce();
+  });
+
+  it("shows noise suppression on state", () => {
+    const props = renderControlBar({ isNoiseSuppression: true });
+    render(<ControlBar {...props} />);
+    expect(screen.getByTitle("Noise suppression on — background noise is filtered")).toBeInTheDocument();
   });
 
   it("calls start/stop when the hold-to-talk button is held and released", async () => {

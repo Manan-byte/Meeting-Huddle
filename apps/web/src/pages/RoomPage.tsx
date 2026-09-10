@@ -187,6 +187,8 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
     screenStream,
     settings,
     applySettings,
+    noiseSuppression,
+    toggleNoiseSuppression,
   } = useLiveKit({ roomName: room?.code ?? null, identity: currentUser?.id ?? "participant" });
 
   // Local mic activity → speaking ring on the mic button (and own tile).
@@ -811,6 +813,8 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
         onPushToTalkHotkeyChange={setPushToTalkHotkey}
         isCaptionsEnabled={isCaptionEnabled}
         onToggleCaptions={handleToggleCaptions}
+        isNoiseSuppression={noiseSuppression}
+        onToggleNoiseSuppression={() => void toggleNoiseSuppression()}
       />
 
       {/* ── Modals (overlay panels) ────────────────────────────────── */}

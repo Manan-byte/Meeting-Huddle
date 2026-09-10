@@ -196,7 +196,11 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
   }, []);
 
   const handleCreate = () => {
-    if (!userName.trim() || !socket) return;
+    if (!socket) return;
+    if (!userName.trim()) {
+      setError("Please enter your name first to start a meeting. (No account needed.)");
+      return;
+    }
     setError("");
     setPreviewing("create");
   };
@@ -230,7 +234,15 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
   };
 
   const handleJoin = () => {
-    if (!userName.trim() || !joinCode.trim() || !socket) return;
+    if (!socket) return;
+    if (!userName.trim()) {
+      setError("Please enter your name first to join the meeting. (No account needed.)");
+      return;
+    }
+    if (!joinCode.trim()) {
+      setError("Enter the 6-character meeting code from the invite.");
+      return;
+    }
     setError("");
     setPreviewing("join");
   };
@@ -385,7 +397,7 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
                       className="dash-primary"
                       style={styles.heroBtn}
                       onClick={handleCreate}
-                      disabled={!userName.trim() || isCreating}
+                      disabled={isCreating}
                     >
                       <Video size={16} /> {isCreating ? "Creating..." : "New meeting"}
                     </button>
@@ -406,7 +418,7 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
                       onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                       maxLength={6}
                     />
-                    <button className="hp-ghost" style={styles.joinBtn} onClick={handleJoin} disabled={!userName.trim() || !joinCode.trim() || isCreating}>
+                    <button className="hp-ghost" style={styles.joinBtn} onClick={handleJoin} disabled={isCreating}>
                       <ArrowRight size={16} /> Join
                     </button>
                   </div>

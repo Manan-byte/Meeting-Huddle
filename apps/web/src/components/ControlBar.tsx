@@ -39,6 +39,7 @@ import {
   Sun,
   Moon,
   Captions,
+  AudioWaveform,
 } from "lucide-react";
 import { useState } from "react";
 import type { LayoutMode } from "@meet-app/shared";
@@ -80,6 +81,9 @@ interface ControlBarProps {
   isCaptionsEnabled: boolean;
   /** Toggle live captions (emits to room). */
   onToggleCaptions: () => void;
+  /** Whether browser-native noise suppression is active on the mic. */
+  isNoiseSuppression: boolean;
+  onToggleNoiseSuppression: () => void;
   layout: LayoutMode;
   onToggleReactions: () => void;
   onTogglePolls: () => void;
@@ -132,6 +136,8 @@ export function ControlBar({
   onToggleDark,
   isCaptionsEnabled,
   onToggleCaptions,
+  isNoiseSuppression,
+  onToggleNoiseSuppression,
   layout,
   onToggleReactions,
   onTogglePolls,
@@ -223,6 +229,21 @@ export function ControlBar({
             }
           >
             <Radio size={18} />
+          </button>
+          <button
+            style={{
+              ...styles.controlButton,
+              background: isNoiseSuppression ? "var(--accent)" : "var(--bg-soft)",
+              color: isNoiseSuppression ? "var(--accent-ink)" : "var(--text)",
+            }}
+            onClick={onToggleNoiseSuppression}
+            title={
+              isNoiseSuppression
+                ? "Noise suppression on — background noise is filtered"
+                : "Noise suppression off — click to filter background noise"
+            }
+          >
+            <AudioWaveform size={18} />
           </button>
         </div>
 

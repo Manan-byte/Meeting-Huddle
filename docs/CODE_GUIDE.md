@@ -149,7 +149,8 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 
 ### `src/hooks/`
 - `useLiveKit.ts` — konek ke LiveKit (SFU): publish kamera/mik/layar, kelola
-  track remote sebagai `MediaStream`, mute/video/screen-share toggle.
+  track remote sebagai `MediaStream`, mute/video/screen-share toggle, dan
+  `noiseSuppression`/`toggleNoiseSuppression` (anti-noise browser-native).
 - `usePushToTalk.ts` — hold-to-talk: hotkey tahan → unmute, lepas → mute, dan
   auto-mute saat blur/unmount.
 - `useSpeakingLevel.ts` — deteksi level suara lokal (untuk ring "speaking").

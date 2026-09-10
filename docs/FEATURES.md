@@ -486,6 +486,25 @@ Reactions, Polls, Live Captions, AI Companion, Virtual Background, Settings Pane
 
 ## Changelog — Recent Fixes & Improvements
 
+### Anti-noise (noise suppression) + join UX: nama wajib & error jelas
+- **Anti-noise toggle di ControlBar** (ikon gelombang, grup media): sekali klik mengaktifkan
+  **browser-native noise suppression + echo cancellation + auto gain control** pada mikrofon
+  (constraints `noiseSuppression/echoCancellation/autoGainControl: true` via
+  `createLocalAudioTrack`). Chrome/Edge memakai engine **RNNoise** — noise latar (AC, keyboard,
+  gonggongan) dibuang sebelum dikirim ke peserta lain. Zero dependency, tanpa server-side DSP.
+- **Implementasi**: `useLiveKit` menambah state `noiseSuppression` + `toggleNoiseSuppression()`
+  (re-acquire mic via `swapMic(deviceId, noiseOn)`); `ControlBar` menambah tombol
+  `isNoiseSuppression`/`onToggleNoiseSuppression` dengan title state (on/off). Toggle off
+  mengembalikan mic polos (default browser).
+- **Join wajib nama**: tombol "New meeting" / "Join" kini **selalu aktif** — klik saat nama
+  kosong menampilkan pesan jelas: "Please enter your name first to start/join a meeting (No
+  account needed.)". Pengguna akun yang belum mengisi nama juga mendapat pesan yang sama
+  (nama akun terisi otomatis bila sudah login).
+- **Error join disurface**: listener `"error"` di `confirmCreate`/`confirmJoin` — "Room not
+  found" kini tampil ramah: "Meeting not found — it may have ended. Ask the host for a new
+  code, or start your own meeting. (No account needed.)" (sebelumnya event error server
+  diabaikan → join tampak "macet" tanpa pesan).
+
 ### Auth disederhanakan: email/password saja (hapus OAuth) + lupa-password
 - **Hapus "Sign in with Google" & "Sign in with GitHub"** dari modal — login kini
   email/password saja. Tidak perlu sinkron callback URL di Google/GitHub console
