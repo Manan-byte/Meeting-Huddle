@@ -33,6 +33,8 @@ interface VideoGridProps {
   layout: LayoutMode;
   /** Meeting settings (used for background blur/virtual background on local video). */
   settings?: MeetingSettings;
+  /** Master output volume (0–1) applied to every remote video's audio. */
+  volume: number;
 }
 
 /**
@@ -48,6 +50,7 @@ export function VideoGrid({
   currentUser,
   layout,
   settings,
+  volume,
 }: VideoGridProps) {
   // Spotlight / speaker view: one large video + side thumbnails
   if (layout === "speaker") {
@@ -59,6 +62,7 @@ export function VideoGrid({
         participants={participants}
         currentUser={currentUser}
         settings={settings}
+        volume={volume}
       />
     );
   }
@@ -92,6 +96,7 @@ export function VideoGrid({
                   isMuted={p.isMuted}
                   isVideoOff={p.isVideoOff}
                   isHandRaised={p.isHandRaised}
+                  volume={volume}
                 />
               </div>
             ))}
@@ -142,6 +147,7 @@ export function VideoGrid({
               isMuted={p.isMuted}
               isVideoOff={p.isVideoOff}
               isHandRaised={p.isHandRaised}
+              volume={volume}
             />
           </div>
         ))}

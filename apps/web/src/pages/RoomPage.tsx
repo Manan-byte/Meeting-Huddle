@@ -90,6 +90,7 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
   // ── UI panel visibility ───────────────────────────────────────────────
   const [showChat, setShowChat] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [volume, setVolume] = useState(1); // master output volume (0–1)
   const [showSettings, setShowSettings] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   /** View settings ("Adjust view") modal visibility. */
@@ -762,6 +763,7 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
             layout={layout}
             settings={settings}
             screenStream={screenStream}
+            volume={volume}
           />
 
           {/* Floating emoji reaction animations */}
@@ -882,6 +884,8 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
         isNoiseSuppression={noiseSuppression}
         onToggleNoiseSuppression={() => void toggleNoiseSuppression()}
         onMuteAll={handleMuteAll}
+        volume={volume}
+        onVolumeChange={setVolume}
       />
 
       {/* ── Modals (overlay panels) ────────────────────────────────── */}

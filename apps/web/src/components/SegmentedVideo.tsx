@@ -71,7 +71,10 @@ export function SegmentedVideo({ stream, mode, background, style }: SegmentedVid
         playsInline
         muted
         style={{ ...styles.clearVideo, ...(style as CSSProperties) }}
-        onLoadedMetadata={(e) => bind(e.currentTarget)}
+        onLoadedMetadata={(e) => {
+          bind(e.currentTarget);
+          void e.currentTarget.play().catch(() => {});
+        }}
       />
     </div>
   );

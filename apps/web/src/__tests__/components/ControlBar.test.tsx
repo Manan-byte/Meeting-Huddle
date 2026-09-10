@@ -48,6 +48,8 @@ function renderControlBar(overrides = {}) {
     isNoiseSuppression: false,
     onToggleNoiseSuppression: vi.fn(),
     onMuteAll: vi.fn(),
+    volume: 1,
+    onVolumeChange: vi.fn(),
   };
   return { ...defaults, ...overrides };
 }

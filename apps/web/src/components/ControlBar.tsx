@@ -102,6 +102,9 @@ interface ControlBarProps {
   onPushToTalkHotkeyChange: (key: string) => void;
   /** Host action: mute all participants (from the Voice menu). */
   onMuteAll: () => void;
+  /** Master output volume for remote audio (0–1). */
+  volume: number;
+  onVolumeChange: (v: number) => void;
 }
 
 /**
@@ -153,6 +156,8 @@ export function ControlBar({
   pushToTalkHotkey,
   onPushToTalkHotkeyChange,
   onMuteAll,
+  volume,
+  onVolumeChange,
 }: ControlBarProps) {
   const [showMore, setShowMore] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
@@ -236,6 +241,8 @@ export function ControlBar({
                 onPushToTalkHotkeyChange={onPushToTalkHotkeyChange}
                 isHost={isHost}
                 onMuteAll={onMuteAll}
+                volume={volume}
+                onVolumeChange={onVolumeChange}
                 onClose={() => setShowVoice(false)}
               />
             )}
@@ -458,6 +465,9 @@ const styles: Record<string, React.CSSProperties> = {
     borderTop: "1px solid var(--border)",
     background: "color-mix(in srgb, var(--bg-card) 82%, transparent)",
     backdropFilter: "blur(14px)",
+    // Positioned above the video area so popovers anchored in the bar
+    // (Voice menu, More menu) paint OVER the video, never behind it.
+    zIndex: 50,
   },
   leftSpacer: {
     flex: 1,

@@ -37,6 +37,8 @@ interface VideoPlayerProps {
   backgroundBlur?: boolean;
   /** Virtual background: CSS color string or an image URL, or null for none. */
   virtualBackground?: string | null;
+  /** Output volume (0–1) for this tile's audio (applies to remote audio). */
+  volume?: number;
 }
 
 /**
@@ -51,6 +53,7 @@ export function VideoPlayer({
   isHandRaised = false,
   backgroundBlur = false,
   virtualBackground = null,
+  volume = 1,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -58,15 +61,19 @@ export function VideoPlayer({
   const level = useSpeakingLevel(isMuted ? null : stream);
   const isSpeaking = level > SPEAKING_THRESHOLD;
 
-  // Bind/unbind the MediaStream to the <video> element
+  // Bind/unbind the MediaStream to the <video> element.
+  // `.play()` is called explicitly because `autoplay` doesn't re-trigger after
+  // an unmount/remount cycle (e.g., toggling video off → on).
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !stream || isVideoOff) return;
     video.srcObject = stream;
+    video.volume = volume;
+    void video.play()?.catch(() => {});
     return () => {
       video.srcObject = null;
     };
-  }, [stream, isVideoOff]);
+  }, [stream, isVideoOff, volume]);
 
   // Local tile with a chosen background → use real segmentation.
   const useSegmented =

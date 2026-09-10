@@ -28,6 +28,8 @@ interface SpeakerViewProps {
   currentUser: User | null;
   /** Meeting settings — background blur/virtual background for the local tile. */
   settings?: MeetingSettings;
+  /** Master output volume (0–1) applied to every remote video's audio. */
+  volume: number;
 }
 
 /**
@@ -42,6 +44,7 @@ export function SpeakerView({
   participants,
   currentUser,
   settings,
+  volume,
 }: SpeakerViewProps) {
   // Pick the most recent non-local participant as "speaker", or fall back to local
   const remoteParticipants = participants.filter((p) => p.id !== currentUser?.id);
@@ -94,6 +97,7 @@ export function SpeakerView({
                 isVideoOff={p.isVideoOff}
                 isLocal={p.id === currentUser?.id}
                 isHandRaised={p.isHandRaised}
+                volume={volume}
               />
             </div>
           ))}

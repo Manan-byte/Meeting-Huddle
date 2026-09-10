@@ -32,6 +32,9 @@ interface VoiceMenuProps {
   /** Local user is host → shows "Mute all participants". */
   isHost: boolean;
   onMuteAll: () => void;
+  /** Master output volume for remote audio (0–1). */
+  volume: number;
+  onVolumeChange: (v: number) => void;
   /** Close the popover (e.g. after an action). */
   onClose: () => void;
 }
@@ -77,6 +80,8 @@ export function VoiceMenu({
   onPushToTalkHotkeyChange,
   isHost,
   onMuteAll,
+  volume,
+  onVolumeChange,
   onClose,
 }: VoiceMenuProps) {
   const [capturing, setCapturing] = useState(false);
@@ -139,6 +144,24 @@ export function VoiceMenu({
           </button>
         </div>
       )}
+
+      <div style={styles.divider} />
+
+      {/* ── Volume ─────────────────────────────────────────────── */}
+      <div style={styles.sectionTitle}>Room volume</div>
+      <div style={styles.volumeRow}>
+        <VolumeX size={14} style={styles.volumeIcon} />
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(volume * 100)}
+          onChange={(e) => onVolumeChange(Number(e.target.value) / 100)}
+          style={styles.volumeSlider}
+          aria-label="Room volume"
+        />
+        <span style={styles.volumeValue}>{Math.round(volume * 100)}%</span>
+      </div>
 
       {/* ── Moderation (host only) ─────────────────────────────── */}
       {isHost && (
@@ -289,5 +312,29 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     cursor: "pointer",
     width: "100%",
+  },
+  volumeRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "4px 10px 6px",
+  },
+  volumeIcon: {
+    color: "var(--text-muted)",
+    flexShrink: 0,
+  },
+  volumeSlider: {
+    flex: 1,
+    minWidth: 0,
+    accentColor: "var(--accent)",
+    cursor: "pointer",
+  },
+  volumeValue: {
+    minWidth: 38,
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--text-muted)",
+    textAlign: "right",
+    fontVariantNumeric: "tabular-nums",
   },
 };
