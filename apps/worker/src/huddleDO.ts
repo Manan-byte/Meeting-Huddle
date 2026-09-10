@@ -65,13 +65,17 @@ export class HuddleDO implements DurableObject {
   private waitingTimes = new Map<string, number>();
   /** room code → polls. */
   private roomPolls = new Map<string, Poll[]>();
+  /** client id → last time we heard anything from their socket. */
+  private lastSeen = new Map<string, number>();
 
   private db: DB;
   private schemaReady: Promise<void>;
   private env: Env;
+  private ctx: DurableObjectState;
 
-  constructor(_state: DurableObjectState, env: Env) {
+  constructor(state: DurableObjectState, env: Env) {
     this.env = env;
+    this.ctx = state;
     this.db = new DB(env.DB);
     this.schemaReady = ensureSchema(env.DB).catch((err) =>
       console.error("[huddle] failed to ensure schema:", err),
@@ -101,6 +105,12 @@ export class HuddleDO implements DurableObject {
       }
     });
     server.addEventListener("close", () => this.handleDisconnect(server));
+
+    // Ensure the heartbeat sweep is running (replaces nothing if already set).
+    const existing = await this.ctx.storage.getAlarm();
+    if (existing === null) {
+      await this.ctx.storage.setAlarm(Date.now() + HuddleDO.SWEEP_INTERVAL_MS);
+    }
 
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -185,6 +195,59 @@ export class HuddleDO implements DurableObject {
     });
   }
 
+  // ── Heartbeat reaper ────────────────────────────────────────────────
+  // A connection can die silently (mobile background, laptop lid, network
+  // drop) without the server ever receiving a WebSocket `close` event — the
+  // user would stay in the room forever. Clients ping every 10s while in a
+  // room; anything silent for HEARTBEAT_TIMEOUT_MS is treated as left.
+  private static readonly HEARTBEAT_TIMEOUT_MS = 90_000;
+  private static readonly SWEEP_INTERVAL_MS = 30_000;
+
+  /** Periodic alarm: remove stale connections from every room. */
+  async alarm(): Promise<void> {
+    await this.reapStale();
+    await this.ctx.storage.setAlarm(Date.now() + HuddleDO.SWEEP_INTERVAL_MS);
+  }
+
+  private async reapStale(): Promise<void> {
+    const now = Date.now();
+    const timeout = HuddleDO.HEARTBEAT_TIMEOUT_MS;
+    const stale: string[] = [];
+    for (const [userId, last] of this.lastSeen) {
+      if (now - last > timeout) stale.push(userId);
+    }
+    if (stale.length === 0) return;
+    for (const userId of stale) {
+      this.lastSeen.delete(userId);
+      const room = this.roomOf(userId);
+      if (!room) continue;
+      if (room.waitingRoom.includes(userId)) {
+        room.waitingRoom = room.waitingRoom.filter((id) => id !== userId);
+        this.userRoomMap.delete(userId);
+        this.waitingNames.delete(userId);
+        this.waitingTimes.delete(userId);
+        this.broadcast(room.code, SOCKET_EVENTS.WAITING_ROOM_UPDATE, this.waitingUsers(room.code));
+      } else {
+        this.leaveRoom(room.code, userId);
+        this.broadcast(room.code, SOCKET_EVENTS.PARTICIPANT_LEFT, {
+          userId,
+          participants: room.participants.filter((p) => p.id !== userId),
+        });
+      }
+      // Free the dead socket if it's still open server-side.
+      const ws = this.sockets.get(userId);
+      if (ws) {
+        try {
+          ws.close();
+        } catch {
+          /* already closed */
+        }
+        this.sockets.delete(userId);
+        this.ids.delete(ws);
+      }
+    }
+  }
+
   private leaveRoom(code: string, userId: string): Room | null {
     const room = this.rooms.get(code);
     if (!room) return null;
@@ -210,11 +273,18 @@ export class HuddleDO implements DurableObject {
   private async handle(ws: WebSocket, event: string, rawData: unknown, ack?: number): Promise<void> {
     const userId = this.ids.get(ws);
     if (!userId) return;
+    // Any inbound message proves this socket is alive — used by the stale
+    // connection reaper (heartbeat) so silently-dropped connections don't
+    // leave ghost participants in rooms.
+    this.lastSeen.set(userId, Date.now());
     const data = (rawData ?? {}) as Record<string, unknown>;
     const resolve = (res: unknown) => this.send(ws, event, res, ack);
 
     try {
       switch (event) {
+        // ── Heartbeat ─────────────────────────────────────────────────
+        case SOCKET_EVENTS.PING:
+          break;
         // ── Room lifecycle ────────────────────────────────────────────
         case SOCKET_EVENTS.CREATE_ROOM: {
           const room = this.createRoom(userId, String(data.hostName ?? ""));

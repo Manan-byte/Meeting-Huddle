@@ -160,7 +160,7 @@ export function VoiceMenu({
 const styles: Record<string, CSSProperties> = {
   menu: {
     position: "absolute",
-    bottom: 64,
+    bottom: 74,
     left: 0,
     display: "flex",
     flexDirection: "column",
@@ -172,7 +172,8 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: "var(--elev-floating)",
     zIndex: 40,
     minWidth: 260,
-    maxHeight: "calc(100vh - 140px)",
+    maxWidth: "calc(100vw - 24px)",
+    maxHeight: "calc(100vh - 150px)",
     overflowY: "auto",
   },
   sectionTitle: {

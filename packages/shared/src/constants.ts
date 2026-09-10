@@ -42,6 +42,8 @@ export const SOCKET_EVENTS = {
   PARTICIPANT_JOINED: "participant:joined",
   /** Server → Client: a participant left the room. */
   PARTICIPANT_LEFT: "participant:left",
+  /** Client → Server (periodic): heartbeat so the server can reap dead connections. */
+  PING: "ping",
   /** Client → Server: toggle microphone mute state. */
   TOGGLE_MUTE: "toggle:mute",
   /** Client → Server: toggle camera on/off state. */

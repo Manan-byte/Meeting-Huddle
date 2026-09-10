@@ -486,7 +486,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 22,
     height: 30,
     borderRadius: 8,
-    marginLeft: -4,
+    marginLeft: 2,
   },
   groupDivider: {
     width: 1,

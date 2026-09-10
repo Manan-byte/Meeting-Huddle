@@ -431,6 +431,16 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
     };
   }, [socket, room, currentUser?.id, setRoom, setParticipants, addMessage, setMessages, updateParticipant, setRecording, setLayout, setMeetingStartedAt]);
 
+  // ── Heartbeat ────────────────────────────────────────────────────────
+  // Ping the server every 10s while in a room so its stale-connection reaper
+  // never mistakes an active client for a ghost (mobile background throttles
+  // timers, so pings are frequent while the server allows 90s of silence).
+  useEffect(() => {
+    if (!socket || !room) return;
+    const timer = setInterval(() => socket.emit(SOCKET_EVENTS.PING), 10_000);
+    return () => clearInterval(timer);
+  }, [socket, room]);
+
   // Auto-dismiss the chat toast after 4 seconds
   useEffect(() => {
     if (!chatToast) return;
