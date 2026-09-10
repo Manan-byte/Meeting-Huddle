@@ -47,6 +47,7 @@ function renderControlBar(overrides = {}) {
     onToggleCaptions: vi.fn(),
     isNoiseSuppression: false,
     onToggleNoiseSuppression: vi.fn(),
+    onMuteAll: vi.fn(),
   };
   return { ...defaults, ...overrides };
 }
@@ -172,13 +173,45 @@ describe("ControlBar", () => {
     expect(props.onToggleLock).toHaveBeenCalledOnce();
   });
 
-  it("enables push-to-talk via the PTT toggle button", async () => {
+  it("opens the Voice menu from the mic chevron", async () => {
     const user = userEvent.setup();
     const props = renderControlBar();
     render(<ControlBar {...props} />);
 
-    await user.click(screen.getByTitle("Enable push to talk"));
+    await user.click(screen.getByTitle("Voice settings (noise suppression, push to talk, mute)"));
+    expect(screen.getByText("Microphone")).toBeInTheDocument();
+    expect(screen.getByText("Push to talk")).toBeInTheDocument();
+    expect(screen.getByText("Mute microphone")).toBeInTheDocument();
+  });
+
+  it("enables push-to-talk from the Voice menu", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+
+    await user.click(screen.getByTitle("Voice settings (noise suppression, push to talk, mute)"));
+    await user.click(screen.getByText("Enable push to talk"));
     expect(props.onTogglePushToTalk).toHaveBeenCalledOnce();
+  });
+
+  it("toggles noise suppression from the Voice menu", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+
+    await user.click(screen.getByTitle("Voice settings (noise suppression, push to talk, mute)"));
+    await user.click(screen.getByText("Noise suppression"));
+    expect(props.onToggleNoiseSuppression).toHaveBeenCalledOnce();
+  });
+
+  it("shows Mute all participants in the Voice menu for hosts", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar({ isHost: true });
+    render(<ControlBar {...props} />);
+
+    await user.click(screen.getByTitle("Voice settings (noise suppression, push to talk, mute)"));
+    await user.click(screen.getByText("Mute all participants"));
+    expect(props.onMuteAll).toHaveBeenCalledOnce();
   });
 
   it("turns the mic button into a hold-to-talk control when PTT is active", () => {
@@ -187,22 +220,6 @@ describe("ControlBar", () => {
 
     const button = screen.getByTitle("Push to talk — hold to talk (Space)");
     expect(button).toBeInTheDocument();
-  });
-
-  it("shows noise suppression off button and toggles on click", async () => {
-    const user = userEvent.setup();
-    const props = renderControlBar();
-    render(<ControlBar {...props} />);
-
-    expect(screen.getByTitle("Noise suppression off — click to filter background noise")).toBeInTheDocument();
-    await user.click(screen.getByTitle(/Noise suppression off/));
-    expect(props.onToggleNoiseSuppression).toHaveBeenCalledOnce();
-  });
-
-  it("shows noise suppression on state", () => {
-    const props = renderControlBar({ isNoiseSuppression: true });
-    render(<ControlBar {...props} />);
-    expect(screen.getByTitle("Noise suppression on — background noise is filtered")).toBeInTheDocument();
   });
 
   it("calls start/stop when the hold-to-talk button is held and released", async () => {

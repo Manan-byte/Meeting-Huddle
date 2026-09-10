@@ -34,16 +34,16 @@ import {
   MoreHorizontal,
   Smile,
   BarChart3,
-  Radio,
   Keyboard,
   Sun,
   Moon,
   Captions,
-  AudioWaveform,
+  ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
 import type { LayoutMode } from "@meet-app/shared";
 import { formatHotkey } from "../hooks/usePushToTalk";
+import { VoiceMenu } from "./VoiceMenu";
 
 interface ControlBarProps {
   isMuted: boolean;
@@ -100,6 +100,8 @@ interface ControlBarProps {
   /** The configured push-to-talk hotkey (raw key value, " " for Space). */
   pushToTalkHotkey: string;
   onPushToTalkHotkeyChange: (key: string) => void;
+  /** Host action: mute all participants (from the Voice menu). */
+  onMuteAll: () => void;
 }
 
 /**
@@ -150,8 +152,10 @@ export function ControlBar({
   onPushToTalkStop,
   pushToTalkHotkey,
   onPushToTalkHotkeyChange,
+  onMuteAll,
 }: ControlBarProps) {
   const [showMore, setShowMore] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
 
   return (
     <div className="ctl-bar" style={styles.bar}>
@@ -159,41 +163,70 @@ export function ControlBar({
       <div style={styles.controls}>
         {/* ── Media controls ──────────────────────────────────────── */}
         <div style={styles.group}>
-          <button
-            style={{
-              ...styles.controlButton,
-              background: isPushToTalk
-                ? isMuted
-                  ? "var(--danger)"
-                  : "var(--accent)"
-                : isMuted
-                  ? "var(--danger)"
-                  : "var(--bg-soft)",
-              color: isPushToTalk && !isMuted ? "var(--accent-ink)" : "var(--text)",
-              boxShadow: isSpeaking && !isMuted ? "0 0 0 3px var(--accent)" : undefined,
-            }}
-            onClick={isPushToTalk ? undefined : onToggleMute}
-            onPointerDown={
-              isPushToTalk
-                ? (e) => {
-                    e.preventDefault();
-                    onPushToTalkStart();
-                  }
-                : undefined
-            }
-            onPointerUp={isPushToTalk ? onPushToTalkStop : undefined}
-            onPointerLeave={isPushToTalk ? onPushToTalkStop : undefined}
-            onPointerCancel={isPushToTalk ? onPushToTalkStop : undefined}
-            title={
-              isPushToTalk
-                ? `Push to talk — hold to talk (${formatHotkey(pushToTalkHotkey)})`
-                : isMuted
-                  ? "Unmute"
-                  : "Mute"
-            }
-          >
-            {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
-          </button>
+          {/* Mic + chevron → Voice menu (noise suppression, PTT, mute) */}
+          <div style={styles.voiceWrap}>
+            <button
+              style={{
+                ...styles.controlButton,
+                background: isPushToTalk
+                  ? isMuted
+                    ? "var(--danger)"
+                    : "var(--accent)"
+                  : isMuted
+                    ? "var(--danger)"
+                    : "var(--bg-soft)",
+                color: isPushToTalk && !isMuted ? "var(--accent-ink)" : "var(--text)",
+                boxShadow: isSpeaking && !isMuted ? "0 0 0 3px var(--accent)" : undefined,
+              }}
+              onClick={isPushToTalk ? undefined : onToggleMute}
+              onPointerDown={
+                isPushToTalk
+                  ? (e) => {
+                      e.preventDefault();
+                      onPushToTalkStart();
+                    }
+                  : undefined
+              }
+              onPointerUp={isPushToTalk ? onPushToTalkStop : undefined}
+              onPointerLeave={isPushToTalk ? onPushToTalkStop : undefined}
+              onPointerCancel={isPushToTalk ? onPushToTalkStop : undefined}
+              title={
+                isPushToTalk
+                  ? `Push to talk — hold to talk (${formatHotkey(pushToTalkHotkey)})`
+                  : isMuted
+                    ? "Unmute"
+                    : "Mute"
+              }
+            >
+              {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+            <button
+              style={{
+                ...styles.controlButton,
+                ...styles.voiceChevron,
+                background: showVoice || isNoiseSuppression || isPushToTalk ? "var(--bg-soft)" : "transparent",
+              }}
+              onClick={() => setShowVoice((v) => !v)}
+              title="Voice settings (noise suppression, push to talk, mute)"
+            >
+              <ChevronDown size={16} />
+            </button>
+            {showVoice && (
+              <VoiceMenu
+                isMuted={isMuted}
+                onToggleMute={onToggleMute}
+                isNoiseSuppression={isNoiseSuppression}
+                onToggleNoiseSuppression={onToggleNoiseSuppression}
+                isPushToTalk={isPushToTalk}
+                onTogglePushToTalk={onTogglePushToTalk}
+                pushToTalkHotkey={pushToTalkHotkey}
+                onPushToTalkHotkeyChange={onPushToTalkHotkeyChange}
+                isHost={isHost}
+                onMuteAll={onMuteAll}
+                onClose={() => setShowVoice(false)}
+              />
+            )}
+          </div>
           <button
             style={{
               ...styles.controlButton,
@@ -214,36 +247,6 @@ export function ControlBar({
             title={isScreenSharing ? "Stop sharing" : "Share screen"}
           >
             <Monitor size={18} />
-          </button>
-          <button
-            style={{
-              ...styles.controlButton,
-              background: isPushToTalk ? "var(--accent)" : "var(--bg-soft)",
-              color: isPushToTalk ? "var(--accent-ink)" : "var(--text)",
-            }}
-            onClick={onTogglePushToTalk}
-            title={
-              isPushToTalk
-                ? `Disable push to talk (${formatHotkey(pushToTalkHotkey)})`
-                : "Enable push to talk"
-            }
-          >
-            <Radio size={18} />
-          </button>
-          <button
-            style={{
-              ...styles.controlButton,
-              background: isNoiseSuppression ? "var(--accent)" : "var(--bg-soft)",
-              color: isNoiseSuppression ? "var(--accent-ink)" : "var(--text)",
-            }}
-            onClick={onToggleNoiseSuppression}
-            title={
-              isNoiseSuppression
-                ? "Noise suppression on — background noise is filtered"
-                : "Noise suppression off — click to filter background noise"
-            }
-          >
-            <AudioWaveform size={18} />
           </button>
         </div>
 
@@ -460,6 +463,17 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: 4,
+  },
+  voiceWrap: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+  },
+  voiceChevron: {
+    width: 22,
+    height: 30,
+    borderRadius: 8,
+    marginLeft: -4,
   },
   groupDivider: {
     width: 1,

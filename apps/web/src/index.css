@@ -180,6 +180,21 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   background: var(--bg-soft);
 }
 
+/* Voice menu popover — suppress the generic button glow, use soft hover */
+.ctl-vmenu button:not(:disabled):hover {
+  transform: none;
+  box-shadow: none;
+}
+.ctl-vrow:hover:not(:disabled) {
+  background: var(--bg-soft);
+}
+.ctl-vrow .ctl-switch-knob {
+  transform: translateX(0);
+}
+.ctl-vrow[data-active="true"] .ctl-switch-knob {
+  transform: translateX(14px);
+}
+
 /* ════════════════════════════════════════════════════════════════
    Shared animations (used by HomePage + RoomPage chat toasts, and
    RecordingIndicator pulse)

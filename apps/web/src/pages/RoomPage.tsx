@@ -870,6 +870,7 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
         onToggleCaptions={handleToggleCaptions}
         isNoiseSuppression={noiseSuppression}
         onToggleNoiseSuppression={() => void toggleNoiseSuppression()}
+        onMuteAll={handleMuteAll}
       />
 
       {/* ── Modals (overlay panels) ────────────────────────────────── */}
