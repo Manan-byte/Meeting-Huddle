@@ -336,7 +336,7 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
               >
                 Sign up
               </button>
-              <button className="hp-signin" style={styles.signInBtn} onClick={() => setShowAuth(true)}>Sign in</button>
+              <button className="hp-signin" style={styles.signInBtn} onClick={() => { setAuthMode("email"); setAuthError(""); setShowAuth(true); }}>Sign in</button>
             </>
           ))}
         </div>
@@ -534,7 +534,7 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
                 <div style={styles.authPrompt}>
                   <button
                     className="dash-primary" style={styles.authPromptBtn}
-                    onClick={() => setShowAuth(true)}
+                    onClick={() => { setAuthMode("email"); setAuthError(""); setShowAuth(true); }}
                   >
                     Sign in
                   </button>
@@ -565,7 +565,7 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
               <div style={styles.schedSummary}>
                 <CalendarDays size={15} style={styles.schedSummaryIcon} />
                 <span style={styles.schedSummaryText}>
-                  {schedDate ? formatSchedDate(schedDate) : "Pilih tanggal"} · {schedTime ? formatSchedTime(schedTime) : "pilih jam"}
+                  {schedDate ? formatSchedDate(schedDate) : "Pick a date"} · {schedTime ? formatSchedTime(schedTime) : "pick a time"}
                 </span>
               </div>
 
@@ -616,7 +616,7 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
                         window.location.href = mailto;
                         setEmailMsg({
                           type: "info",
-                          text: `✅ Rapat dijadwalkan — aplikasi email Anda terbuka untuk mengirim undangan ke ${invitees.length} tamu (${invitees.join(", ")}).`,
+                          text: `✅ Meeting scheduled — your email app opened to send invites to ${invitees.length} guest(s) (${invitees.join(", ")}).`,
                         });
                       } else {
                         setEmailMsg(null);
@@ -719,18 +719,20 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
               <span style={styles.authBrandText}>Huddle</span>
             </div>
 
-            <h2 style={styles.authTitle}>Sign in</h2>
-            <p style={styles.authSub}>Sign in to schedule meetings and invite guests.</p>
+            <h2 style={styles.authTitle}>
+              {authMode === "register" ? "Create account" : authMode === "forgot" ? "Reset password" : "Sign in"}
+            </h2>
+            {authMode !== "forgot" && (
+              <p style={styles.authSub}>
+                {authMode === "register"
+                  ? "Sign up to schedule meetings and invite guests."
+                  : "Sign in to schedule meetings and invite guests."}
+              </p>
+            )}
 
             {authMode === "register" ? (
               <>
                 {/* Email + name + password register */}
-                <button
-                  style={styles.authBack}
-                  onClick={() => { setAuthMode("email"); setAuthError(""); }}
-                >
-                  ← Back
-                </button>
                 <div style={styles.authField}>
                   <UserIcon size={16} style={styles.authFieldIcon} />
                   <input
@@ -871,12 +873,6 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
             ) : (
               <>
                 {/* Email + password login */}
-                <button
-                  style={styles.authBack}
-                  onClick={() => { setAuthMode("email"); setAuthError(""); }}
-                >
-                  ← Back
-                </button>
                 <div style={styles.authField}>
                   <Mail size={16} style={styles.authFieldIcon} />
                   <input
