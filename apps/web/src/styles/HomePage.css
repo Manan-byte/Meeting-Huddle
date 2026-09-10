@@ -39,6 +39,11 @@
 /* Nav Sign-in pill */
 .hp-signin:hover { background: var(--bg-hover); box-shadow: var(--elev-raised); }
 
+/* Nav Sign-up pill */
+.hp-signup { transition: filter var(--motion-base) var(--ease-standard), transform var(--motion-base) var(--ease-standard); }
+.hp-signup:hover { filter: brightness(1.1); box-shadow: var(--elev-raised); }
+.hp-signup:active { transform: scale(0.98); }
+
 /* Feature cards — hover lift with soft elevation */
 .hp-feature {
   transition: transform var(--motion-base) var(--ease-standard),

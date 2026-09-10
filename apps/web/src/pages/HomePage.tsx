@@ -329,7 +329,15 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
               <button className="hp-ghost" style={styles.signOutBtn} onClick={logout}>Sign out</button>
             </div>
           ) : (
-            <button className="hp-signin" style={styles.signInBtn} onClick={() => setShowAuth(true)}>Sign in</button>
+            <>
+              <button
+                className="hp-signup" style={styles.signUpBtn}
+                onClick={() => { setAuthMode("register"); setAuthError(""); setShowAuth(true); }}
+              >
+                Sign up
+              </button>
+              <button className="hp-signin" style={styles.signInBtn} onClick={() => setShowAuth(true)}>Sign in</button>
+            </>
           ))}
         </div>
       </header>
@@ -1029,6 +1037,17 @@ const styles: Record<string, React.CSSProperties> = {
     background: "var(--bg-soft)",
     color: "var(--text)",
     cursor: "pointer",
+  },
+  signUpBtn: {
+    padding: "8px 18px",
+    fontSize: 13,
+    fontWeight: 600,
+    borderRadius: 999,
+    border: "1px solid var(--border)",
+    background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)",
+    color: "var(--accent-ink)",
+    cursor: "pointer",
+    boxShadow: "0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent)",
   },
   navUser: {
     display: "flex",
