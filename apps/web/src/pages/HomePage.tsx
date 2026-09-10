@@ -726,13 +726,43 @@ export function HomePage({ onJoinRoom, onWaitingRoom }: HomePageProps) {
         )}
 
         <footer className="hp-footer">
-          <span className="hp-footer-mark">Huddle</span>
-          <span className="hp-footer-line">
-            Powered by <span>LiveKit SFU</span> &middot; <span>Cloudflare Workers</span> &middot; <span>React</span>
-          </span>
-          <span className="hp-footer-copy">
-            Free video meetings for up to 10 participants per room &middot; &copy; {new Date().getFullYear()}
-          </span>
+          <div className="hp-footer-grid">
+            <div className="hp-footer-brand">
+              <span className="hp-footer-mark">Huddle</span>
+              <p className="hp-footer-desc">
+                Free, browser-based video meetings with HD quality, live captions,
+                polls and real-time collaboration — up to 10 participants per room.
+              </p>
+              <div className="hp-footer-pillrow">
+                <span className="hp-footer-pill">Free</span>
+                <span className="hp-footer-pill">No download</span>
+                <span className="hp-footer-pill">End-to-end realtime</span>
+              </div>
+            </div>
+            <div className="hp-footer-col">
+              <h4 className="hp-footer-title">Product</h4>
+              <ul className="hp-footer-list">
+                <li><button className="hp-footer-link" onClick={handleCreate}>New meeting</button></li>
+                <li><button className="hp-footer-link" onClick={handleJoin}>Join meeting</button></li>
+                <li><button className="hp-footer-link" onClick={() => goTo("schedule")}>Schedule</button></li>
+                <li><button className="hp-footer-link" onClick={() => goTo("dashboard")}>Meeting history</button></li>
+              </ul>
+            </div>
+            <div className="hp-footer-col">
+              <h4 className="hp-footer-title">Powered by</h4>
+              <ul className="hp-footer-list">
+                <li><span className="hp-footer-chip">LiveKit SFU</span></li>
+                <li><span className="hp-footer-chip">Cloudflare Workers</span></li>
+                <li><span className="hp-footer-chip">React + Vite</span></li>
+                <li><span className="hp-footer-chip">WebRTC</span></li>
+              </ul>
+            </div>
+          </div>
+          <div className="hp-footer-bottom">
+            <span>© {new Date().getFullYear()} Huddle — free video meetings</span>
+            <span className="hp-footer-dot">·</span>
+            <span>Made for teams up to 10</span>
+          </div>
         </footer>
       </main>
 

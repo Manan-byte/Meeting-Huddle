@@ -12,6 +12,8 @@ describe("App", () => {
 
   it("renders New meeting button", () => {
     render(<App />);
-    expect(screen.getByRole("button", { name: /new meeting/i })).toBeInTheDocument();
+    // "New meeting" appears as the hero CTA and as a footer link; assert at
+    // least one is present rather than a single ambiguous match.
+    expect(screen.getAllByRole("button", { name: /new meeting/i }).length).toBeGreaterThan(0);
   });
 });
