@@ -486,6 +486,17 @@ Reactions, Polls, Live Captions, AI Companion, Virtual Background, Settings Pane
 
 ## Changelog — Recent Fixes & Improvements
 
+### Voice menu terpadu (noise suppression + push-to-talk + mute) — Discord-style
+- **Satu menu Voice**: klik chevron di samping tombol mic membuka popover dengan 3 section:
+  **Microphone** (Mute microphone, Noise suppression + hint RNNoise), **Push to talk**
+  (enable + capture hotkey "Hold key"), **Moderation** (Mute all participants, host only).
+- **Bar lebih bersih**: tombol standalone push-to-talk & noise suppression dihapus dari
+  control bar — semua kontrol audio kini satu tempat (komponen baru `VoiceMenu.tsx`).
+- **Hotkey capture**: klik "Hold key" → tekan tombol apa pun → tersimpan (Escape untuk
+  batal); dipakai `usePushToTalk` untuk hold-to-talk.
+- **Terverifikasi**: 4 test baru (buka menu, toggle PTT, toggle noise, Mute all host) —
+  total 50 test lulus.
+
 ### Host moderation: mute per-user & mute all (Discord-style)
 - **Mute per-peserta**: di panel **Participants**, host melihat ikon mic di tiap baris peserta
   non-host (muncul saat hover) → klik mematikan mikrofon peserta itu dari jarak jauh.

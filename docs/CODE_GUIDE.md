@@ -176,6 +176,7 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 | `SpeakerView` | Layout speaker (spotlight + thumbnails samping). |
 | `VideoGrid` | Grid responsif video tiles (auto/grid/speaker/sidebar). |
 | `VideoPlayer` | Tile video tunggal (stream/off-state, nama, badge). |
+| `VoiceMenu` | Popover Voice (chevron mic): mute mic, noise suppression, push-to-talk + hotkey, Mute all (host). |
 | `ViewSettingsModal` | Pilih mode tata letak (Adjust view). |
 | `WaitingRoom` | Panel host untuk admit/reject pengunjung. |
 
