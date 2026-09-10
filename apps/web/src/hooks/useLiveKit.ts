@@ -73,6 +73,8 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
   /** Whether noise suppression / echo cancellation is active on the mic. */
   const noiseRef = useRef(false);
   const [noiseSuppression, setNoiseSuppression] = useState(false);
+  /** User-facing message when camera/mic/LiveKit fails (shown in RoomPage). */
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   // ── Room connect / disconnect ──────────────────────────────────────
   useEffect(() => {
@@ -87,6 +89,7 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           console.error("LiveKit token error:", body);
+          if (!cancelled) setMediaError("Media server unavailable — video/audio may not connect.");
           return;
         }
         const { token, url } = (await res.json()) as { token: string; url: string };
@@ -142,10 +145,20 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
         localIdRef.current = room.localParticipant.identity;
         if (!cancelled) {
           setLocalStream(combined);
+          setMediaError(null);
           pendingStreamRef.current = null;
         }
       } catch (err) {
         console.error("Failed to connect to LiveKit:", err);
+        if (!cancelled) {
+          const name = err instanceof DOMException ? err.name : String(err);
+          let msg = "Camera/microphone unavailable. Check browser permissions and try again.";
+          if (name === "NotAllowedError") msg = "Camera & microphone permission was denied. Allow access in your browser, then join again.";
+          if (name === "NotFoundError") msg = "No camera or microphone found on this device.";
+          if (name === "NotReadableError") msg = "Camera or microphone is in use by another app.";
+          if (name === "TimeoutError" || /token|fetch|network|failed/i.test(name)) msg = "Media server unreachable — check your connection and retry.";
+          setMediaError(msg);
+        }
       }
     }
 
@@ -165,6 +178,7 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
       setScreenStream(null);
       setRemoteStreams(new Map());
       setIsScreenSharing(false);
+      setMediaError(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomName, identity]);
@@ -354,5 +368,6 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     applySettings,
     noiseSuppression,
     toggleNoiseSuppression,
+    mediaError,
   };
 }

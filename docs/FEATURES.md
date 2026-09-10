@@ -486,6 +486,23 @@ Reactions, Polls, Live Captions, AI Companion, Virtual Background, Settings Pane
 
 ## Changelog — Recent Fixes & Improvements
 
+### Refactor arsitektur + cleanup UI + feedback error media
+- **File raksasa dipecah**: `HomePage.tsx` (1865 → ~730 baris) & `RoomPage.tsx` (1064 →
+  861 baris) dengan mengekstrak seluruh inline-style ke `src/pages/home/styles.ts` dan
+  `src/pages/room/styles.ts` — struktur jauh lebih mudah dibaca.
+- **`AuthModal` komponen mandiri**: modal sign-in/register/forgot dipindah keluar dari
+  HomePage ke `src/components/AuthModal.tsx` dengan state form internal
+  (mode/email/password/name/error/reset-code) — HomePage cukup memanggil
+  `<AuthModal initialMode onClose showToast/>`.
+- **Mock video illustration dihapus** dari hero landing (tile palsu Alice/Bob/Carol +
+  "REC 00:24") — statis dan menyesatkan seperti meeting sungguhan. Hero kini
+  single-column yang bersih & terpusat.
+- **Feedback error media (bug video)**: saat kamera/mikrofon gagal (izin ditolak, device
+  dipakai, server media mati), `useLiveKit` mengekspos `mediaError` dengan pesan ramah
+  per penyebab (`NotAllowedError`, `NotFoundError`, `NotReadableError`, token/network) —
+  RoomPage menampilkan banner merah di atas video. Sebelumnya error hanya di console,
+  user tidak tahu kenapa videonya tidak muncul.
+
 ### Anti-noise (noise suppression) + join UX: nama wajib & error jelas
 - **Anti-noise toggle di ControlBar** (ikon gelombang, grup media): sekali klik mengaktifkan
   **browser-native noise suppression + echo cancellation + auto gain control** pada mikrofon

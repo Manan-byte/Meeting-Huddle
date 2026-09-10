@@ -297,3 +297,25 @@ adapter over a raw WebSocket. It exposes `on/off/once/emit(id, data, ack)/close`
 `room:create`/`room:join` on reconnect so the DO re-syncs room state + chat history.
 
 `RoomPage` wires all 16+ components, 20+ socket event listeners, and the `useLiveKit` hook.
+
+### Frontend source layout (refactored)
+
+```
+apps/web/src/
+├─ pages/
+│  ├─ HomePage.tsx        # landing/dashboard/schedule/history + join flow (~730 baris)
+│  ├─ home/styles.ts      # inline-style HomePage (diekstrak — file halaman jadi ringkas)
+│  ├─ RoomPage.tsx        # view meeting: orchestrates semua panel + 20 listener (~861 baris)
+│  └─ room/styles.ts      # inline-style RoomPage
+├─ components/            # AuthModal, PreJoinScreen, ControlBar, VideoGrid, VideoPlayer, dll.
+├─ hooks/                 # useLiveKit (media + noise suppression + mediaError), usePushToTalk, useSpeakingLevel
+├─ contexts/              # SocketContext, AuthContext, RoomContext
+└─ lib/wsSocket.ts        # adapter WebSocket Socket.IO-compatible
+```
+
+- **AuthModal self-contained**: state form (mode/email/password/nama/error/reset-code)
+  dipindah ke dalam komponen; HomePage hanya memegang `authModal: "email" | "register" |
+  "forgot" | null`.
+- **Media error surfaced**: `useLiveKit.mediaError` membawa pesan ramah per penyebab
+  (izin ditolak, device dipakai, server media mati) → RoomPage menampilkan banner di atas
+  video. Error livekit tidak lagi hanya di console.

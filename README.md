@@ -46,7 +46,7 @@ live captions, dan perekaman. Rapat bisa dijadwalkan dan diundangkan lewat email
 
 | Area | Detail |
 |---|---|
-| 🎥 **Video/Audio** | LiveKit SFU — mute, kamera on/off, indikator berbicara, hingga 10 peserta/ruang (dapat dinaikkan) |
+| 🎥 **Video/Audio** | LiveKit SFU — mute, kamera on/off, indikator berbicara, hingga 10 peserta/ruang (dapat dinaikkan). Error kamera/mik (izin ditolak, device dipakai, server media mati) ditampilkan jelas di layar |
 | 🔊 **Anti-noise** | Toggle noise suppression — filter noise latar (AC, keyboard) sebelum dikirim ke peserta lain (RNNoise browser-native, zero dependency) |
 | 🖥️ **Screen share** | Bagikan layar dengan preview sendiri sebelum mulai |
 | 💬 **Chat & reaksi** | Chat realtime antar peserta + reaksi emoji |
@@ -189,7 +189,17 @@ izinkan mic/kamera, pastikan masuk ruang dengan kode 6 karakter.
 ```
 meet-app/
 ├─ apps/
-│  ├─ web/        # React 19 + Vite + livekit-client (SPA frontend)
+│  ├─ web/                         # React 19 + Vite + livekit-client (SPA frontend)
+│  │  └─ src/
+│  │     ├─ pages/
+│  │     │  ├─ HomePage.tsx        # Landing/dashboard/schedule/history + join flow
+│  │     │  ├─ home/styles.ts      # Styles HomePage (dipisah agar file ringkas)
+│  │     │  ├─ RoomPage.tsx        # View video meeting (orchestrates all panels)
+│  │     │  └─ room/styles.ts      # Styles RoomPage
+│  │     ├─ components/            # AuthModal, PreJoinScreen, ControlBar, VideoGrid, dll
+│  │     ├─ hooks/                 # useLiveKit, usePushToTalk, useSpeakingLevel
+│  │     ├─ contexts/              # Socket, Auth, Room context
+│  │     └─ lib/wsSocket.ts        # WebSocket adapter (Socket.IO-compatible)
 │  └─ worker/     # Cloudflare Worker + Durable Object (realtime, auth, LiveKit token, static assets)
 ├─ packages/
 │  └─ shared/     # Types & constants bersama (SOCKET_EVENTS, DASH_EVENTS, dll)

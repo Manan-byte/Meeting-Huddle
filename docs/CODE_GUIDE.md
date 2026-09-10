@@ -158,8 +158,9 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 ### `src/components/` — UI
 | Komponen | Guna |
 |----------|------|
+| `AuthModal` | Modal sign in / sign up / forgot password (self-contained, state form internal). |
 | `ChatPanel` | Daftar + kirim pesan chat. |
-| `ControlBar` | Bar bawah: mic, kamera, layar, hand-raise, rekam, chat, peserta, invite, layout, setting, end meeting. |
+| `ControlBar` | Bar bawah: mic, kamera, layar, noise suppression, push-to-talk, hand-raise, rekam, chat, peserta, invite, layout, setting, end meeting. |
 | `InviteModal` | Salin link undangan (kode + URL) + mailto. |
 | `LiveCaptions` | Web Speech API → segment streaming ke room. |
 | `MeetingTimer` | Timer meeting (startedAt → HH:MM:SS). |
@@ -170,7 +171,7 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 | `ReactionBar` / `ReactionOverlay` | Pilih emoji + animasi floating. |
 | `RecordingIndicator` | Indikator REC/PAUSED + timer. |
 | `SchedulePicker` | Kalender custom + time picker AM/PM. |
-| `SegmentedVideo` | View video saat meeting (pengganti lama). |
+| `SegmentedVideo` | Virtual background (canvas) — dipakai VideoPlayer. |
 | `SettingsPanel` | Resolusi, device, virtual background (upload gambar). |
 | `SpeakerView` | Layout speaker (spotlight + thumbnails samping). |
 | `VideoGrid` | Grid responsif video tiles (auto/grid/speaker/sidebar). |
@@ -181,8 +182,10 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 ### `src/pages/`
 | Page | Guna |
 |------|------|
-| `HomePage` | Landing + dashboard: hero (New meeting / join code), feature strip, sign-in modal (email/password + lupa-password), admin Schedule & History views. |
-| `RoomPage` | Tampilan meeting utama: header, video area, sidebar chat/participant, ControlBar, semua modal, listener WebSocket. |
+| `HomePage` | Landing + dashboard: hero (New meeting / join code), feature strip, auth via `<AuthModal>`, admin Schedule & History views. |
+| `home/styles.ts` | Semua inline-style HomePage (diekstrak agar file halaman ringkas). |
+| `RoomPage` | Tampilan meeting utama: header, video area, sidebar chat/participant, ControlBar, semua modal, listener WebSocket, banner error media. |
+| `room/styles.ts` | Semua inline-style RoomPage. |
 
 ### `src/__tests__/`
 Unit test (Vitest + Testing Library): ControlBar, TimePicker, VideoPlayer,
