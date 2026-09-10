@@ -14,6 +14,7 @@ export const styles: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "row",
     overflow: "hidden",
+    position: "relative",
   },
   main: {
     flex: 1,

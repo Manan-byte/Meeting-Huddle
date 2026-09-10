@@ -728,7 +728,7 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
             />
             {meetingStartedAt > 0 && <MeetingTimer startedAt={meetingStartedAt} />}
           </div>
-          <div style={styles.headerRight}>
+          <div className="room-header-right" style={styles.headerRight}>
             <span style={styles.roomCode}>{room?.code ?? "—"}</span>
             <span style={styles.participantCount}>
               <span style={styles.liveDot} />
@@ -794,6 +794,7 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
         {/* ── Sidebar (Participants / Chat) on the right ────────────── */}
         {/* Only one sidebar panel visible at a time */}
         <div
+          className="room-sidebar"
           style={{
             ...styles.sidebar,
             display: showChat || showParticipants ? "flex" : "none",
@@ -904,7 +905,10 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
       {/* End meeting button (host only, floating above control bar) */}
       {currentUser?.isHost && (
         <button
-          style={styles.endMeetingBtn}
+          style={{
+            ...styles.endMeetingBtn,
+            right: showChat || showParticipants ? 356 : 20,
+          }}
           onClick={handleEndMeeting}
           title="End meeting for all"
         >

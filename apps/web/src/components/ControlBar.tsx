@@ -159,8 +159,8 @@ export function ControlBar({
 
   return (
     <div className="ctl-bar" style={styles.bar}>
-      <div style={styles.leftSpacer} />
-      <div style={styles.controls}>
+      <div className="ctl-left-spacer" style={styles.leftSpacer} />
+      <div className="ctl-controls" style={styles.controls}>
         {/* ── Media controls ──────────────────────────────────────── */}
         <div style={styles.group}>
           {/* Mic + chevron → Voice menu (noise suppression, PTT, mute) */}
@@ -423,7 +423,7 @@ export function ControlBar({
       </div>
 
       {/* ── Leave meeting (right, red) ────────────────────────────── */}
-      <div style={styles.rightSpacer}>
+      <div className="ctl-right-spacer" style={styles.rightSpacer}>
         <button
           style={{ ...styles.controlButton, ...styles.leaveButton }}
           onClick={onLeave}

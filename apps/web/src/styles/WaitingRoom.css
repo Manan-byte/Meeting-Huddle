@@ -3,7 +3,7 @@
    ================================================================ */
 
 .waiting-room {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 12px; left: 24px;
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 14px 18px; min-width: 280px; z-index: 15;
 }
