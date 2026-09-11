@@ -47,11 +47,11 @@ live captions, dan perekaman. Rapat bisa dijadwalkan dan diundangkan lewat email
 | Area | Detail |
 |---|---|
 | 🎥 **Video/Audio** | LiveKit SFU — mute, kamera on/off, indikator berbicara, hingga 10 peserta/ruang (dapat dinaikkan). Error kamera/mik (izin ditolak, device dipakai, server media mati) ditampilkan jelas di layar |
-| 🔊 **Anti-noise** | Toggle noise suppression — filter noise latar (AC, keyboard) sebelum dikirim ke peserta lain (RNNoise browser-native, zero dependency) |
-| 🎙️ **Voice menu** | Klik chevron di samping tombol mic → satu menu: mute mic, noise suppression, push-to-talk + hotkey, dan "Mute all" (host) — Discord-style |
-| 🔇 **Moderasi mute (host)** | Mute per-peserta (klik ikon mic di daftar peserta) + **Mute all** (Discord-style) — host mematikan mikrofon peserta lain dari jarak jauh |
+| 🔊 **Anti-noise** | Toggle noise suppression ("Studio sound") di Settings → Audio — filter noise latar (AC, keyboard) sebelum dikirim ke peserta lain (RNNoise browser-native, zero dependency) |
+| ⚙️ **Settings (ala Google Meet)** | Dialog 5 tab: **Audio** (device, Studio sound, push-to-talk + hotkey, speaker test, volume) · **Video** (kamera, resolusi kirim/terima, background) · **General** (notifikasi, leave empty calls, autopip) · **Captions** (bahasa, live/translated, font) · **Reactions** — semua diterapkan instan |
+| 🔇 **Moderasi mute (host)** | Panel **People**: mute/unmute per-peserta (tombol mic per baris + menu ⋮) + **Mute all** di menu ⋯ — host mematikan mikrofon peserta lain dari jarak jauh |
 | 🖥️ **Screen share** | Bagikan layar dengan preview sendiri sebelum mulai |
-| 💬 **Chat & reaksi** | Chat realtime antar peserta + reaksi emoji |
+| 💬 **Chat & reaksi** | Panel chat gelap ala Meet (input pill "Send a message") + reaksi emoji (sound/animation bisa diatur di Settings → Reactions) |
 | 🙋 **Engage** | Angkat tangan, polling, live captions (Web Speech API), push-to-talk |
 | 📋 **Pre-join lobby** | Preview kamera/mikrofon + pilih perangkat sebelum masuk ruang |
 | 🎨 **Layout** | Auto / Tiled / Spotlight / Sidebar + slider ukuran tile |
@@ -60,7 +60,7 @@ live captions, dan perekaman. Rapat bisa dijadwalkan dan diundangkan lewat email
 | 📜 **History** | Riwayat rapat yang pernah diikuti/ dibuat (perlu akun) |
 | 🔐 **Auth** | Email/password: daftar (`Sign up`), masuk (`Sign in`), lupa password (reset code on-screen) |
 | 🗄️ **Data** | Cloudflare D1 — users, sesi, riwayat, jadwal (persisten) |
-| 🌗 **UI** | Light SaaS modern, glassmorphism, dark-mode-friendly, responsif |
+| 🌗 **UI** | Room chrome gelap ala Google Meet: control bar bawah, rail kanan (Chat/People), menu ⋯, People panel, chat; dialog Settings putih; dark-mode-friendly, responsif |
 
 ## Akun & Otentikasi
 

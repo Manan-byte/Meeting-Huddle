@@ -159,24 +159,24 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 | Komponen | Guna |
 |----------|------|
 | `AuthModal` | Modal sign in / sign up / forgot password (self-contained, state form internal). |
-| `ChatPanel` | Daftar + kirim pesan chat. |
-| `ControlBar` | Bar bawah: mic, kamera, layar, noise suppression, push-to-talk, hand-raise, rekam, chat, peserta, invite, layout, setting, end meeting. |
+| `ChatPanel` | Panel chat gelap ala Meet: judul + X, input pill "Send a message", auto-scroll. |
+| `ControlBar` | Bar bawah ala Meet: ⋯ More, mic, kamera (chevron → settings video), layar, reaksi, captions, tangan, ⋮, end call + rail kanan Chat/People; menu ⋯ berisi recording, adjust view, fullscreen, PiP, background, report, help, settings. |
 | `InviteModal` | Salin link undangan (kode + URL) + mailto. |
-| `LiveCaptions` | Web Speech API → segment streaming ke room. |
+| `LiveCaptions` | Web Speech API → segment streaming ke room; bahasa, ukuran font & font bisa diatur di Settings → Captions. |
 | `MeetingTimer` | Timer meeting (startedAt → HH:MM:SS). |
 | `MeetingTitle` | Edit judul meeting (host). |
-| `ParticipantList` | Daftar peserta dengan status mic/kamera, host crown, "You"; host punya tombol mute per-peserta + "Mute all". |
+| `ParticipantList` | Panel People ala Meet: search, "IN THE MEETING", Contributors (collapsible), avatar berwarna, mute per-baris + menu ⋮, badge host. |
 | `PollModal` | Buat/vote/tutup polling. |
 | `PreJoinScreen` | Lobby pre-join: preview kamera, pilih device, nama. |
-| `ReactionBar` / `ReactionOverlay` | Pilih emoji + animasi floating. |
+| `ReactionBar` / `ReactionOverlay` | Pilih emoji + animasi floating (bisa dimatikan via Settings → Reactions). |
 | `RecordingIndicator` | Indikator REC/PAUSED + timer. |
 | `SchedulePicker` | Kalender custom + time picker AM/PM. |
 | `SegmentedVideo` | Virtual background (canvas) — dipakai VideoPlayer. |
-| `SettingsPanel` | Resolusi, device, virtual background (upload gambar). |
+| `SettingsPanel` | Dialog Settings 5 tab ala Meet (Audio/Video/General/Captions/Reactions), diterapkan instan; pref tambahan disimpan di localStorage (`huddle_meet_prefs`). |
 | `SpeakerView` | Layout speaker (spotlight + thumbnails samping). |
 | `VideoGrid` | Grid responsif video tiles (auto/grid/speaker/sidebar). |
 | `VideoPlayer` | Tile video tunggal (stream/off-state, nama, badge). |
-| `VoiceMenu` | Popover Voice (chevron mic): mute mic, noise suppression, push-to-talk + hotkey, Mute all (host). |
+| `SupportModals` | Dialog Report a problem / Report abuse (mailto) + Troubleshooting & help. |
 | `ViewSettingsModal` | Pilih mode tata letak (Adjust view). |
 | `WaitingRoom` | Panel host untuk admit/reject pengunjung. |
 
@@ -185,7 +185,7 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 |------|------|
 | `HomePage` | Landing + dashboard: hero (New meeting / join code), feature strip, auth via `<AuthModal>`, admin Schedule & History views. |
 | `home/styles.ts` | Semua inline-style HomePage (diekstrak agar file halaman ringkas). |
-| `RoomPage` | Tampilan meeting utama: header, video area, sidebar chat/participant, ControlBar, semua modal, listener WebSocket, banner error media. |
+| `RoomPage` | Tampilan meeting utama: header, video area, sidebar chat/people, ControlBar (rail kanan + menu ⋯), semua modal, listener WebSocket, banner error media, prefs Meet (localStorage), fullscreen/PiP/report/help. |
 | `room/styles.ts` | Semua inline-style RoomPage. |
 
 ### `src/__tests__/`

@@ -486,6 +486,16 @@ Reactions, Polls, Live Captions, AI Companion, Virtual Background, Settings Pane
 
 ## Changelog — Recent Fixes & Improvements
 
+### Room UI overhaul — Google Meet-style
+- **ControlBar** ditulis ulang mengikuti layout Meet: `⋯` More · mic · kamera + chevron (→ Settings Video) · layar · reaksi · captions · angkat tangan · `⋮` More options · end call. Rail vertikal kanan: **Chat** (badge unread) + **People**. Semua chrome gelap permanen (independen dari tema).
+- **Menu ⋯**: blok recording (host: start/pause/stop; non-host: "Recording unavailable"), Adjust view, Full screen (activeElement fullscreen), Picture-in-picture (kamera lokal), Backgrounds and effects, Report a problem, Report abuse, Troubleshooting & help, Settings; plus invite/polls/theme dan (host) lock room + Mute all.
+- **Voice menu mic dihapus** — seluruh kontrol audio (Studio sound = noise suppression, push-to-talk + hotkey, mute) dan "Mute all" pindah ke **Settings → Audio** dan menu ⋯; file `VoiceMenu.tsx` dihapus.
+- **Settings jadi dialog 5 tab** (putih, sidebar kiri): Audio (device mic/speaker + Test beep via `setSinkId`, studio sound, push-to-talk, adaptive audio, volume) · Video (kamera, send/receive resolution, backgrounds & effects + upload) · General (diagnostic info, auto-PiP, desktop notifications — request permission + notifikasi chat masuk, leave empty calls — prompt keluar setelah 2 menit sendirian, only contacts) · Captions (bahasa meeting = bahasa recognizer, No/Live/Translated, font size & font diterapkan ke overlay) · Reactions (show from others, animation, sound — chime WebAudio, accessibility). Semua instant-apply; pref persist di `localStorage` (`huddle_meet_prefs`).
+- **People panel** ala Meet: ringkasan "N joined" + thumbnail avatar, search, "IN THE MEETING" → Contributors (collapsible), avatar berwarna, "(You)", badge "Meeting host", tombol mute per baris (host) + menu `⋮` per-user (self: mic/kamera; host: mute), Mute all.
+- **Chat panel** gelap: judul + X, input pill "Send a message" dengan tombol kirim di dalam.
+- **LiveCaptions**: bahasa recognition bisa diatur + font size/family dari Settings → Captions.
+- Test `ControlBar.test.tsx` ditulis ulang mengikuti desain baru (24 test).
+
 ### Voice menu terpadu (noise suppression + push-to-talk + mute) — Discord-style
 - **Satu menu Voice**: klik chevron di samping tombol mic membuka popover dengan 3 section:
   **Microphone** (Mute microphone, Noise suppression + hint RNNoise), **Push to talk**

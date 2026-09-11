@@ -34,28 +34,36 @@
                   │     └── <ReactionBar>            // Emoji reaction buttons
                   │
                   ├── Sidebar (right, mutually exclusive)
-                  │     ├── <ParticipantList>        // Participant roster
+                  │     ├── <ParticipantList>        // People panel (search + mute)
                   │     └── <ChatPanel>              // Chat messages
                   │
-                  ├── <ControlBar>                   // Bottom toolbar
+                  ├── <ControlBar>                   // Bottom toolbar (Meet layout)
+                  │     ├── More (⋯) — opens the More menu
                   │     ├── Mic toggle / hold-to-talk (PTT)
-                  │     ├── Camera toggle
+                  │     ├── Camera toggle + chevron (→ Settings Video)
                   │     ├── Screen share toggle
-                  │     ├── Push-to-talk toggle
-                  │     ├── Chat toggle
-                  │     ├── Participants toggle
-                  │     ├── Settings toggle
+                  │     ├── Reactions toggle
+                  │     ├── Captions toggle
                   │     ├── Hand raise toggle
-                  │     ├── Invite toggle
-                  │     ├── Record button (start/pause/resume)
-                  │     ├── Layout toggle
-                  │     ├── Lock toggle (host only)
-                  │     └── More (⋯) menu → Reactions, Polls, Push-to-talk key, Stop & Download Recording
+                  │     ├── More options (⋮) — same More menu
+                  │     └── Leave (red, right)
+                  │
+                  ├── Right rail (vertical)
+                  │     ├── Chat toggle (with unread badge)
+                  │     └── People toggle
+                  │
+                  ├── More menu (⋯ / ⋮ popover)
+                  │     ├── Recording: unavailable (non-host) | start/pause/stop (host)
+                  │     ├── Adjust view · Full screen · Picture-in-picture · Backgrounds and effects
+                  │     ├── Report a problem · Report abuse · Troubleshooting & help · Settings
+                  │     └── Lock (host) · Mute all (host) · Invite · Polls · Theme
                   │
                   ├── Modals
-                  │     ├── <SettingsPanel>          // Resolution/device/background
+                  │     ├── <SettingsPanel>          // 5-tab dialog (Audio/Video/General/Captions/Reactions)
                   │     ├── <InviteModal>            // Copy invite link
-                  │     └── <PollModal>              // Create/vote/view polls
+                  │     ├── <PollModal>              // Create/vote/view polls
+                  │     ├── <HelpModal>              // Troubleshooting & help
+                  │     └── <ReportModal>            // Report a problem / abuse (mailto)
                   │
                   └── End Meeting button (host only)
 ```
@@ -221,24 +229,24 @@ Also exports **`buildInviteMailto(invitees, meeting, clientUrl)`** → a `mailto
 
 | Prop | Type |
 |------|------|
-| `isMuted` | `boolean` |
-| `isVideoOff` | `boolean` |
-| `isScreenSharing` | `boolean` |
+| `isMuted` / `isVideoOff` / `isScreenSharing` | `boolean` |
 | `showChat` / `showParticipants` / `showReactions` / `showPolls` | `boolean` |
-| `isHandRaised` / `isRecording` / `isHost` / `isLocked` | `boolean` |
-| `layout` | `LayoutMode` |
-| `onToggle*` + `onStopRecord` | callbacks |
-| `onLeave` | `() => void` |
-| `unreadChat` | `number` — unread chat count shown as a red pill badge on the Chat button |
+| `isHandRaised` / `isRecording` / `isRecordingPaused` / `isHost` / `isLocked` | `boolean` |
+| `onToggleMute` / `onToggleVideo` / `onToggleScreenShare` / `onToggleChat` / `onToggleParticipants` / `onToggleHandRaise` / `onToggleCaptions` / `onToggleReactions` / `onTogglePolls` / `onToggleInvite` / `onToggleLayout` / `onToggleLock` / `onToggleDark` / `onToggleRecord` / `onStopRecord` / `onLeave` | callbacks |
+| `onToggleFullscreen` | `() => void` — More menu → Full screen |
+| `onTogglePiP` | `() => void` — More menu → picture-in-picture |
+| `onOpenBackgrounds` / `onOpenCameraOptions` | `() => void` — open Settings on the Video tab (camera chevron / menus) |
+| `onReport` | `(type: "problem" \| "abuse") => void` |
+| `onHelp` | `() => void` — open the Troubleshooting & help dialog |
+| `unreadChat` | `number` — unread chat count shown as a red pill badge on the rail Chat button |
 | `isPushToTalk` | `boolean` — whether push-to-talk mode is active |
-| `onTogglePushToTalk` | `() => void` |
 | `onPushToTalkStart` / `onPushToTalkStop` | `() => void` — hold-to-talk mic button (mouse hold) |
 | `pushToTalkHotkey` | `string` — configured hotkey (raw key value, `" "` for Space) |
-| `onPushToTalkHotkeyChange` | `(key: string) => void` — from the More-menu key picker |
+| `onMuteAll` | `() => void` — host "Mute all participants" (More menu) |
 
-**Behavior**: Bottom toolbar with core buttons (mic, camera, share, hand, record, layout, lock-host-only, chat, participants, invite, settings) grouped into a pill container, plus a **More (⋯) dropdown** holding Reactions, Polls, a **Push-to-talk key** picker, and (while recording) **Stop & Download Recording**. Active panels highlighted. Host-only: record, locked toggle, end meeting. The Chat button shows a red count badge when `unreadChat > 0`.
+**Behavior**: Google Meet-style bottom toolbar: `⋯` More · mic (toggle / hold-to-talk when PTT active) · camera + chevron (chevron → Settings Video) · screen share · reactions · captions · raise hand · `⋮` More options · red **Leave** call button. A **right vertical rail** holds Chat (with unread badge) and People toggles. The **More menu** contains: recording (host: start/pause/stop; non-host: "Recording unavailable"), Adjust view, Full screen, Open picture-in-picture, Backgrounds and effects, Report a problem, Report abuse, Troubleshooting & help, Settings, plus (host) Lock room / Mute all participants, Invite, Polls, and theme toggle. All chrome uses a fixed dark palette (`MEET` object), independent of the app light/dark theme.
 
-**Push-to-talk**: When `isPushToTalk` is true, the mic button becomes a **hold-to-talk** control (pointer down = `onPushToTalkStart`, up/leave/cancel = `onPushToTalkStop`) and a separate **Push-to-talk toggle** button (Radio icon) sits next to screen share. The More menu exposes a hotkey picker — click the field, then press the desired key.
+**Push-to-talk**: When `isPushToTalk` is true the mic button becomes a **hold-to-talk** control (pointer down = `onPushToTalkStart`, up/leave/cancel = `onPushToTalkStop`). PTT is enabled/hotkey-configured in **Settings → Audio** (not in the bar anymore).
 
 ### `ChatPanel` (`components/ChatPanel.tsx`)
 
@@ -247,8 +255,9 @@ Also exports **`buildInviteMailto(invitees, meeting, clientUrl)`** → a `mailto
 | `messages` | `ChatMessage[]` |
 | `onSend` | `(text: string) => void` |
 | `currentUserId` | `string \| null` — for styling own messages |
+| `onClose` | `() => void` — X button closes the panel |
 
-**Behavior**: Scrollable message list with auto-scroll, rendered in the **right sidebar** (shared with the participant list). Own messages align right in an accent bubble; others align left with a sender-avatar initials chip. Input with Enter key support; displays sender name, timestamp (HH:MM), and message text.
+**Behavior**: Dark panel (Meet style): title + close (X), scrollable message list with auto-scroll (own messages right in a blue bubble, others left in gray), and a **pill input** ("Send a message") with an in-pill send button.
 
 ### `ParticipantList` (`components/ParticipantList.tsx`)
 
@@ -256,8 +265,13 @@ Also exports **`buildInviteMailto(invitees, meeting, clientUrl)`** → a `mailto
 |------|------|
 | `participants` | `User[]` |
 | `currentUser` | `User \| null` |
+| `isHost` | `boolean` |
+| `onMuteUser` / `onUnmuteUser` | `(userId: string) => void` (host, on others) |
+| `onMuteAll` | `() => void` (host, header button) |
+| `onClose` | `() => void` — X button closes the panel |
+| `onToggleSelfMic` / `onToggleSelfCamera` | `() => void` — self row button / self menu |
 
-**Behavior**: List with avatar initials, "You" badge, "Host" badge, mute/video indicators.
+**Behavior**: Google Meet-style **People panel**: summary ("N joined" + avatar thumbnails), search box ("Search for people", live filter), "IN THE MEETING" section, "Contributors (N)" collapsible list. Each row: colored avatar (initials), name + "(You)", "Meeting host" subtitle, mute button (host mutes others; self toggles own mic), and a per-user `⋮` menu (self: mic/camera toggles; host on others: mute/unmute).
 
 ### `ReactionBar` (`components/ReactionBar.tsx`)
 
@@ -273,6 +287,7 @@ Also exports **`buildInviteMailto(invitees, meeting, clientUrl)`** → a `mailto
 | Prop | Type |
 |------|------|
 | `reactions` | `Reaction[]` |
+| `animate` | `boolean` (default `true`) — when false, reactions render statically at center (Settings → Reactions "Animation" off) |
 
 **Behavior**: Creates floating emoji at random horizontal position (10-90%). Auto-removes after 2 seconds with CSS animation.
 
@@ -297,8 +312,11 @@ Also exports **`buildInviteMailto(invitees, meeting, clientUrl)`** → a `mailto
 | `onSegment` | `(segment: CaptionSegment) => void` |
 | `userName` | `string` |
 | `userId` | `string` |
+| `language` | `string` (default `"en-US"`) — BCP-47 recognition language (Settings → Captions "Language of the meeting"; when Translated captions is chosen, RoomPage passes `preferredLanguage`) |
+| `captionFontSize` | `string` — Default / Small / Medium / Large |
+| `captionFont` | `string` — Default / Sans-serif / Serif / Monospace |
 
-**Behavior**: Uses `webkitSpeechRecognition` / `SpeechRecognition` API. Sends interim + final segments via `CAPTION_SEGMENT`. Shows last 10 segments. Emits `CAPTION_TOGGLE` to enable for room.
+**Behavior**: Uses `webkitSpeechRecognition` / `SpeechRecognition` API. Sends interim + final segments via `CAPTION_SEGMENT`. Shows last 10 segments. Emits `CAPTION_TOGGLE` to enable for room. Font size/family (from Settings → Captions) are applied to the subtitle overlay inline.
 
 **Type declarations**: The Web Speech API types are not in TypeScript's DOM lib. The component declares them locally using a `SpeechRecognitionConstructor` type alias (`new () => SpeechRecognition`) and a `declare global` block for `Window.SpeechRecognition`/`Window.webkitSpeechRecognition`. This avoids TS2693 ("'SpeechRecognition' only refers to a type") by providing a value-level constructor type rather than using `typeof` on an interface.
 
@@ -343,10 +361,33 @@ Also exports **`buildInviteMailto(invitees, meeting, clientUrl)`** → a `mailto
 | Prop | Type |
 |------|------|
 | `onClose` | `() => void` |
-| `onApplySettings` | `(settings: MeetingSettings) => void` |
+| `initialTab` | `"audio" \| "video" \| "general" \| "captions" \| "reactions"` (default `"audio"`) |
+| `onApplySettings` | `(settings: MeetingSettings) => void` — device/resolution/background changes |
 | `currentSettings` | `MeetingSettings` |
+| `isNoiseSuppression` / `onToggleNoiseSuppression` | `boolean` / `() => void` — "Studio sound" |
+| `isPushToTalk` / `onTogglePushToTalk` / `pushToTalkHotkey` / `onPushToTalkHotkeyChange` | PTT toggle + hotkey capture |
+| `volume` / `onVolumeChange` | `number` / `(v: number) => void` — output volume (Call control) |
+| `onToggleCaptions` | `(enabled: boolean) => void` — live captions on/off |
+| `captionsMode` / `onCaptionsModeChange` | `"none" \| "live" \| "translated"` |
+| `captionLanguage` / `preferredLanguage` (+ setters) | `string` — BCP-47 |
+| `captionFontSize` / `captionFont` / `onCaptionStyleChange` | captions font customization |
+| `sendDiagnostics` / `autoPiP` / `desktopNotifications` / `leaveEmptyCalls` / `onlyContacts` / `adaptiveAudio` / `receiveResolution` (+ setters) | General/Video prefs (persisted via RoomPage's `huddle_meet_prefs`) |
+| `showReactionsFromOthers` / `reactionAnimation` / `reactionSound` / `reactionAccessibility` (+ setters) | Reactions prefs |
 
-**Behavior**: Clean, no-scroll modal. **Video** section: resolution dropdown (360p/480p/720p/1080p) + camera/mic device selectors (from `navigator.mediaDevices.enumerateDevices()`). **Background** section: a single row of swatches — None / Blur / color (Green, Blue, Red, Purple) / Upload image. Selecting Blur sets `backgroundBlur=true`; a color or image sets `virtualBackground`; None clears both. Footer has Cancel + Apply. Apply re-acquires media and replaces tracks.
+**Behavior**: Google Meet-style **white dialog** with a left sidebar (Audio · Video · General · Captions · Reactions) and instant-apply controls:
+- **Audio**: microphone select, Studio sound (noise suppression), push-to-talk (+ hotkey input), speaker select + **Test** tone (uses `setSinkId` when supported), adaptive audio, Call control → output volume slider.
+- **Video**: "Video enhancement has moved" banner linking to backgrounds, camera select, send resolution (Auto/360p/480p/720p/1080p → re-acquires the camera track), receive resolution (pref), backgrounds & effects (None/Blur/color swatches/upload image).
+- **General**: diagnostic info, auto picture-in-picture dropdown, desktop notifications (requests permission), leave empty calls, only contacts.
+- **Captions**: language of the meeting, No/Live/Translated captions radios, preferred language (translated mode), customize captions (font size + font).
+- **Reactions**: show reactions from others, animation, sound, accessibility dropdown.
+Changes apply the moment a control changes (no Apply/Cancel footer) — device/resolution re-acquisition goes through `onApplySettings`/LiveKit `applySettings`.
+
+### `SupportModals` (`components/SupportModals.tsx`)
+
+- **`ReportModal`** (`type: "problem" | "abuse"`, `roomCode?`, `onClose`): textarea + Send → opens the mail client with a prefilled `mailto:` (no SMTP on the free tier), same pattern as the password-reset code.
+- **`HelpModal`** (`onClose`): static troubleshooting checklist (mic/camera/screen-sharing/network/reload).
+
+Wired from the ControlBar More menu (`onReport` / `onHelp`).
 
 ### `InviteModal` (`components/InviteModal.tsx`)
 
@@ -383,7 +424,7 @@ Also exports **`buildInviteMailto(invitees, meeting, clientUrl)`** → a `mailto
 | `layout` | `LayoutMode` |
 | `onChange` | `(layout: LayoutMode) => void` |
 
-**Behavior**: Toggles between grid/speaker layout. Shows `LayoutGrid` or `LayoutPanelTop` icon. (Not currently used standalone — the Adjust view modal replaces it in the ControlBar layout button.)
+**Behavior**: Toggles between grid/speaker layout. Shows `LayoutGrid` or `LayoutPanelTop` icon. (Not currently used standalone — the ControlBar opens the Adjust view modal from the More menu.)
 
 ## Hooks
 
