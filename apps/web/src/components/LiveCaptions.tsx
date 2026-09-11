@@ -34,6 +34,12 @@ interface LiveCaptionsProps {
   userName: string;
   /** Socket ID of the local user (for segment attribution). */
   userId: string;
+  /** Speech recognition language (BCP-47, e.g. "en-US", "id-ID"). */
+  language?: string;
+  /** Caption font size ("Default" | "Small" | "Medium" | "Large"). */
+  captionFontSize?: string;
+  /** Caption font family ("Default" | "Sans-serif" | "Serif" | "Monospace"). */
+  captionFont?: string;
 }
 
 // ── Web Speech API type declarations ──────────────────────────────────────
@@ -85,6 +91,9 @@ export function LiveCaptions({
   onSegment,
   userName,
   userId,
+  language = "en-US",
+  captionFontSize = "Default",
+  captionFont = "Default",
 }: LiveCaptionsProps) {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   /** Display segments (limited to last 10 for readability). */
@@ -113,7 +122,7 @@ export function LiveCaptions({
     const recognition = new SpeechRecognitionAPI();
     recognition.continuous = true;         // Keep listening after each result
     recognition.interimResults = true;     // Include draft (non-final) transcripts
-    recognition.lang = "en-US";            // Speech recognition language
+    recognition.lang = language;           // Speech recognition language
 
     // Handle speech recognition results
     recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -167,7 +176,7 @@ export function LiveCaptions({
     } catch {
       // Already started
     }
-  }, [isEnabled, socket, onSegment, userName, userId]);
+  }, [isEnabled, socket, onSegment, userName, userId, language]);
 
   // Start/stop recognition based on isEnabled state
   useEffect(() => {
@@ -192,10 +201,26 @@ export function LiveCaptions({
   // Don't render if disabled or no segments to display
   if (!isEnabled || displaySegments.length === 0) return null;
 
+  const sizeMap: Record<string, number> = { Default: 14, Small: 12, Medium: 16, Large: 20 };
+  const fontMap: Record<string, string> = {
+    Default: "var(--font-body)",
+    "Sans-serif": "sans-serif",
+    Serif: "Georgia, 'Times New Roman', serif",
+    Monospace: "'JetBrains Mono', ui-monospace, monospace",
+  };
+  const capStyle: React.CSSProperties = {
+    fontSize: sizeMap[captionFontSize] ?? 14,
+    fontFamily: fontMap[captionFont] ?? "var(--font-body)",
+  };
+
   return (
     <div className="live-captions">
       {displaySegments.map((seg) => (
-        <div key={seg.id} className={`caption-segment ${seg.isFinal ? "final" : "interim"}`}>
+        <div
+          key={seg.id}
+          className={`caption-segment ${seg.isFinal ? "final" : "interim"}`}
+          style={capStyle}
+        >
           <span className="caption-speaker">{seg.userName}:</span>
           <span className="caption-text">{seg.text}</span>
         </div>

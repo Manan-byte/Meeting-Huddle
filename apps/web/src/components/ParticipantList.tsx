@@ -1,18 +1,33 @@
 /**
- * @file ParticipantList — displays all room participants with status indicators.
+ * @file ParticipantList — Google Meet-style "People" side panel.
  *
- * Shows each participant's avatar (initials), name, and status badges:
- *   - "(You)" label for the local user
- *   - "Host" label for the room host
- *   - "Muted" badge when microphone is off
- *   - "No Video" badge when camera is off
+ * Shows everyone in the call:
+ *   - Summary (image 9): "N joined" + name preview + avatar thumbnail row.
+ *   - Full list (image 10): search box, "IN THE MEETING" section,
+ *     "Contributors (N)" with collapse, per-row avatar / name / "(You)" /
+ *     "Meeting host" subtitle / mute button / per-user More (⋯) menu.
  *
- * Connects to: RoomPage (provides participants and currentUser),
- *              shared types (User)
+ * Host controls: mute/unmute any participant (matching image 10), mute all,
+ * per-user More menu. Self row: mic + camera toggles from its More menu.
+ *
+ * Connects to: RoomPage (participants, currentUser, moderation handlers)
  */
 
+import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import type { User } from "@meet-app/shared";
-import { Mic, MicOff, VolumeX } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  Search,
+  ChevronDown,
+  MoreVertical,
+  VolumeX,
+  X,
+  Volume2,
+} from "lucide-react";
 import "../styles/ParticipantList.css";
 
 interface ParticipantListProps {
@@ -20,21 +35,42 @@ interface ParticipantListProps {
   participants: User[];
   /** The local user (null before joining). */
   currentUser: User | null;
-  /** True when the local user is the room host (shows moderation controls). */
+  /** True when the local user is the room host. */
   isHost: boolean;
   /** Host action: mute a specific participant. */
   onMuteUser?: (userId: string) => void;
   /** Host action: unmute a specific participant. */
   onUnmuteUser?: (userId: string) => void;
-  /** Host action: mute all participants (Discord-style). */
+  /** Host action: mute all participants. */
   onMuteAll?: () => void;
+  /** Close the panel (X). */
+  onClose: () => void;
+  /** Toggle the local microphone (self row / self menu). */
+  onToggleSelfMic?: () => void;
+  /** Toggle the local camera (self menu). */
+  onToggleSelfCamera?: () => void;
+}
+
+/** Deterministic avatar color per participant id. */
+const AVATAR_COLORS = [
+  "#e8710a",
+  "#188038",
+  "#1a73e8",
+  "#d93025",
+  "#9334e6",
+  "#c5221f",
+  "#007b83",
+  "#f29900",
+];
+
+function colorFor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 
 /**
- * Renders a scrollable list of all room participants.
- * Each participant shows avatar, name, role, and status badges.
- * The host (isHost) gets per-user mute/unmute buttons and a "Mute all"
- * button in the header.
+ * Renders the People panel: summary + searchable contributor list.
  */
 export function ParticipantList({
   participants,
@@ -43,271 +79,415 @@ export function ParticipantList({
   onMuteUser,
   onUnmuteUser,
   onMuteAll,
+  onClose,
+  onToggleSelfMic,
+  onToggleSelfCamera,
 }: ParticipantListProps) {
-  const others = participants.filter((p) => !p.isHost);
+  const [query, setQuery] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return participants;
+    return participants.filter((p) => p.name.toLowerCase().includes(q));
+  }, [participants, query]);
+
+  const othersCount = participants.filter((p) => !p.isHost).length;
+
   return (
     <div style={styles.container}>
+      {/* Header: People + X */}
       <header style={styles.header}>
-        <h3 style={styles.heading}>
-          Participants
+        <h3 style={styles.title}>People</h3>
+        <button style={styles.closeBtn} onClick={onClose} title="Close">
+          <X size={20} />
+        </button>
+      </header>
+
+      {/* Summary (image 9): joined count + avatar thumbnails */}
+      {participants.length > 0 && (
+        <div style={styles.summary}>
+          <span style={styles.summaryNames}>
+            {participants.length} joined ·{" "}
+            {participants
+              .map((p) => p.name)
+              .join(", ")
+              .slice(0, 64)}
+            {participants.map((p) => p.name).join(", ").length > 64 ? "…" : ""}
+          </span>
+          <div style={styles.thumbs}>
+            {participants.slice(0, 8).map((p) => (
+              <span key={p.id} style={{ ...styles.thumb, background: colorFor(p.id) }}>
+                {initials(p.name)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Search */}
+      <div style={styles.searchWrap}>
+        <Search size={16} style={styles.searchIcon} />
+        <input
+          style={styles.searchInput}
+          placeholder="Search for people"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {/* Section label */}
+      <div style={styles.sectionLabel}>IN THE MEETING</div>
+
+      {/* Contributors header + mute all */}
+      <div style={styles.contribHeader}>
+        <button style={styles.contribTitle} onClick={() => setCollapsed((v) => !v)}>
+          <ChevronDown
+            size={18}
+            style={{
+              transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
+              transition: "transform 160ms cubic-bezier(0.28,0,0.22,1)",
+            }}
+          />
+          Contributors
           <span style={styles.count}>{participants.length}</span>
-        </h3>
-        {isHost && others.length > 0 && (
-          <button
-            className="pl-muteall"
-            style={styles.muteAllBtn}
-            onClick={onMuteAll}
-            title="Mute all participants"
-          >
+        </button>
+        {isHost && othersCount > 0 && (
+          <button style={styles.muteAllBtn} onClick={onMuteAll} title="Mute all">
             <VolumeX size={14} /> Mute all
           </button>
         )}
-      </header>
-      {isHost && others.length > 0 && (
-        <p style={styles.moderateHint}>
-          Click the mic icon next to a participant to mute/unmute them
-        </p>
+      </div>
+
+      {/* Rows */}
+      {!collapsed && (
+        <ul style={styles.list}>
+          {filtered.length === 0 && (
+            <li style={styles.empty}>No people found</li>
+          )}
+          {filtered.map((p) => (
+            <ParticipantRow
+              key={p.id}
+              participant={p}
+              isYou={p.id === currentUser?.id}
+              isLocalHost={isHost}
+              onMuteUser={onMuteUser}
+              onUnmuteUser={onUnmuteUser}
+              onToggleSelfMic={onToggleSelfMic}
+              onToggleSelfCamera={onToggleSelfCamera}
+            />
+          ))}
+        </ul>
       )}
-      <ul style={styles.list}>
-        {participants.map((p, i) => (
-          <ParticipantRow
-            key={p.id}
-            participant={p}
-            isYou={p.id === currentUser?.id}
-            hasDivider={i < participants.length - 1}
-            showModeration={isHost && !p.isHost && p.id !== currentUser?.id}
-            onMuteUser={onMuteUser}
-            onUnmuteUser={onUnmuteUser}
-          />
-        ))}
-      </ul>
     </div>
   );
 }
 
-/** A single participant row with hover state and status indicators. */
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 function ParticipantRow({
   participant,
   isYou,
-  hasDivider,
-  showModeration,
+  isLocalHost,
   onMuteUser,
   onUnmuteUser,
+  onToggleSelfMic,
+  onToggleSelfCamera,
 }: {
   participant: User;
   isYou: boolean;
-  hasDivider: boolean;
-  showModeration?: boolean;
+  isLocalHost: boolean;
   onMuteUser?: (userId: string) => void;
   onUnmuteUser?: (userId: string) => void;
+  onToggleSelfMic?: () => void;
+  onToggleSelfCamera?: () => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  /** Mute button behavior: self toggles own mic; host mutes others. */
+  const canModerate = isYou ? !!onToggleSelfMic : isLocalHost;
+  const isOwnMuted = isYou ? participant.isMuted : false;
+
+  const handleMuteClick = () => {
+    if (isYou) {
+      onToggleSelfMic?.();
+      return;
+    }
+    if (!isLocalHost) return;
+    if (participant.isMuted) onUnmuteUser?.(participant.id);
+    else onMuteUser?.(participant.id);
+  };
+
   return (
-    <li
-      className="pl-row"
-      style={{
-        ...styles.item,
-        ...(hasDivider ? styles.itemDivider : null),
-      }}
-    >
-      {/* Avatar: first two initials */}
-      <div style={{ ...styles.avatar, ...(isYou ? styles.avatarYou : null) }}>
-        {participant.name
-          .split(" ")
-          .map((w) => w[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2)}
-      </div>
+    <li style={styles.row} className="pl-row">
+      {/* Avatar */}
+      <span style={{ ...styles.avatar, background: colorFor(participant.id) }}>
+        {initials(participant.name)}
+      </span>
+
+      {/* Name + subtitle */}
       <div style={styles.info}>
         <div style={styles.nameRow}>
-          <span style={styles.name}>{participant.name}</span>
-          {isYou && <span style={styles.youBadge}>You</span>}
+          <span style={styles.name}>
+            {participant.name}
+            {isYou && <span style={styles.youTag}> (You)</span>}
+          </span>
         </div>
-        {participant.isHost && (
-          <div style={styles.subline}>
-            <CrownIcon />
-            <span>Host</span>
-          </div>
+        {participant.isHost && <span style={styles.hostTag}>Meeting host</span>}
+        {!participant.isHost && participant.isHandRaised && (
+          <span style={styles.handTag}>🙋 Raised hand</span>
         )}
       </div>
-      <div style={styles.indicators}>
-        {participant.isMuted && (
-          <span style={styles.mutedBadge} title="Muted">
-            <MicOffIcon />
-          </span>
-        )}
-        {participant.isVideoOff && (
-          <span style={styles.noVideoBadge} title="Video off">
-            <CamOffIcon />
-          </span>
-        )}
-        {showModeration && (
-          <button
-            className="pl-mutebtn"
-            style={{ ...styles.muteBtn, ...(participant.isMuted ? styles.muteBtnActive : null) }}
-            onClick={() =>
-              participant.isMuted
-                ? onUnmuteUser?.(participant.id)
-                : onMuteUser?.(participant.id)
-            }
-            title={participant.isMuted ? "Unmute participant" : "Mute participant"}
-          >
-            {participant.isMuted ? <Mic size={13} /> : <MicOff size={13} />}
-          </button>
+
+      {/* Mute button (image 10) */}
+      {canModerate ? (
+        <button
+          className="mute-btn"
+          style={{
+            ...styles.muteBtn,
+            ...(isOwnMuted ? styles.muteBtnSelfOff : null),
+          }}
+          onClick={handleMuteClick}
+          title={
+            isYou
+              ? participant.isMuted
+                ? "Unmute microphone"
+                : "Mute microphone"
+              : participant.isMuted
+                ? "Unmute participant"
+                : "Mute participant"
+          }
+        >
+          {participant.isMuted ? <MicOff size={16} /> : <Mic size={16} />}
+        </button>
+      ) : (
+        <span style={styles.statusIcon} title={participant.isMuted ? "Muted" : "Speaking"}>
+          {participant.isMuted ? <MicOff size={15} /> : <Volume2 size={15} />}
+        </span>
+      )}
+
+      {/* Per-user More menu */}
+      <div style={styles.moreWrap}>
+        <button className="more-btn" style={styles.moreBtn} onClick={() => setMenuOpen((v) => !v)} title="More options">
+          <MoreVertical size={16} />
+        </button>
+        {menuOpen && (
+          <div style={styles.menu}>
+            {isYou ? (
+              <>
+                <button
+                  className="menu-item"
+                  style={styles.menuItem}
+                  onClick={() => {
+                    onToggleSelfMic?.();
+                    setMenuOpen(false);
+                  }}
+                >
+                  {participant.isMuted ? <Mic size={15} /> : <MicOff size={15} />}
+                  {participant.isMuted ? "Unmute microphone" : "Mute microphone"}
+                </button>
+                <button
+                  className="menu-item"
+                  style={styles.menuItem}
+                  onClick={() => {
+                    onToggleSelfCamera?.();
+                    setMenuOpen(false);
+                  }}
+                >
+                  {participant.isVideoOff ? <Video size={15} /> : <VideoOff size={15} />}
+                  {participant.isVideoOff ? "Turn on camera" : "Turn off camera"}
+                </button>
+              </>
+            ) : isLocalHost ? (
+              <>
+                <button
+                  className="menu-item"
+                  style={styles.menuItem}
+                  onClick={() => {
+                    if (participant.isMuted) onUnmuteUser?.(participant.id);
+                    else onMuteUser?.(participant.id);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {participant.isMuted ? <Mic size={15} /> : <MicOff size={15} />}
+                  {participant.isMuted ? "Unmute" : "Mute"}
+                </button>
+                {participant.isHandRaised && (
+                  <span style={styles.menuNote}>🙋 Hand raised</span>
+                )}
+              </>
+            ) : (
+              <span style={styles.menuNote}>No actions available</span>
+            )}
+          </div>
         )}
       </div>
     </li>
   );
 }
 
-const MicOffIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
-    <path d="M19 10v2a7 7 0 0 1-11 4.8" />
-    <line x1="4" y1="4" x2="20" y2="20" />
-  </svg>
-);
-
-const CamOffIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M23 7l-7 5 7 5V7z" />
-    <rect x="1" y="5" width="15" height="14" rx="2" />
-    <line x1="3" y1="3" x2="21" y2="21" />
-  </svg>
-);
-
-const CrownIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M3.4 8.2l4.2 3.1L12 5.2l4.4 6.1 4.2-3.1-1.3 8.3H4.7z" />
-  </svg>
-);
-
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
   container: {
     display: "flex",
     flexDirection: "column",
     height: "100%",
-    background: "var(--bg-card)",
+    background: "#202124",
+    color: "#ffffff",
   },
   header: {
     display: "flex",
     alignItems: "center",
-    gap: 10,
-    padding: "14px 16px",
-    borderBottom: "1px solid var(--border)",
+    justifyContent: "space-between",
+    padding: "14px 16px 4px",
   },
-  heading: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
+  title: {
     margin: 0,
-    fontSize: 15,
-    fontWeight: 700,
-    letterSpacing: "-0.01em",
-    color: "var(--text)",
+    fontSize: 16,
+    fontWeight: 500,
+    color: "#ffffff",
   },
-  count: {
-    marginLeft: "auto",
-    fontSize: 12,
-    fontWeight: 600,
-    color: "var(--text-dim)",
-    background: "var(--bg-soft)",
-    padding: "2px 8px",
-    borderRadius: 999,
-  },
-  muteAllBtn: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 5,
-    padding: "4px 10px",
-    fontSize: 11,
-    fontWeight: 600,
-    borderRadius: 999,
-    border: "1px solid var(--border)",
-    background: "var(--bg-soft)",
-    color: "var(--text)",
-    cursor: "pointer",
-  },
-  moderateHint: {
-    margin: 0,
-    padding: "0 16px 8px",
-    fontSize: 11,
-    color: "var(--text-dim)",
-    fontStyle: "italic",
-  },
-  muteBtn: {
+  closeBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: "50%",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 24,
-    height: 24,
-    borderRadius: "50%",
-    border: "1px solid var(--border)",
-    background: "var(--bg-soft)",
-    color: "var(--text-dim)",
+    background: "transparent",
+    border: "none",
+    color: "#ffffff",
     cursor: "pointer",
-    transition: "background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard)",
   },
-  muteBtnActive: {
-    opacity: 1,
-    background: "color-mix(in srgb, var(--danger) 14%, transparent)",
-    borderColor: "color-mix(in srgb, var(--danger) 35%, transparent)",
-    color: "var(--danger)",
+  summary: {
+    padding: "6px 16px 12px",
+    borderBottom: "1px solid rgba(255,255,255,0.1)",
+  },
+  summaryNames: {
+    display: "block",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.85)",
+    marginBottom: 8,
+  },
+  thumbs: {
+    display: "flex",
+    gap: 8,
+  },
+  thumb: {
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: 600,
+  },
+  searchWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    margin: "10px 16px 6px",
+    padding: "0 12px",
+    height: 40,
+    borderRadius: 8,
+    background: "#3c4043",
+  },
+  searchIcon: {
+    color: "#9aa0a6",
+    flexShrink: 0,
+  },
+  searchInput: {
+    flex: 1,
+    background: "transparent",
+    border: "none",
+    outline: "none",
+    color: "#ffffff",
+    fontSize: 14,
+  },
+  sectionLabel: {
+    padding: "12px 16px 4px",
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: "0.06em",
+    color: "#9aa0a6",
+  },
+  contribHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "4px 8px 4px 12px",
+  },
+  contribTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: "transparent",
+    border: "none",
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: "pointer",
+    padding: "6px 4px",
+  },
+  count: {
+    background: "#3c4043",
+    borderRadius: 999,
+    padding: "1px 8px",
+    fontSize: 12,
+    color: "#ffffff",
+  },
+  muteAllBtn: {
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
+    padding: "5px 10px",
+    fontSize: 12,
+    fontWeight: 500,
+    borderRadius: 999,
+    border: "none",
+    background: "#3c4043",
+    color: "#ffffff",
+    cursor: "pointer",
   },
   list: {
     listStyle: "none",
     margin: 0,
-    padding: "6px 0",
-    overflow: "auto",
+    padding: "4px 8px 16px",
+    overflowY: "auto",
     flex: 1,
   },
-  item: {
+  empty: {
+    padding: "12px 8px",
+    fontSize: 13,
+    color: "#9aa0a6",
+  },
+  row: {
     display: "flex",
     alignItems: "center",
     gap: 12,
-    padding: "10px 16px",
-    transition:
-      "background var(--motion-fast) var(--ease-standard)",
-  },
-  itemDivider: {
-    borderBottom: "1px solid var(--border)",
+    padding: "6px 8px",
+    borderRadius: 8,
+    position: "relative",
   },
   avatar: {
     width: 36,
     height: 36,
     borderRadius: "50%",
-    background:
-      "radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 60%), var(--bg-soft)",
-    color: "var(--text-muted)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    color: "#fff",
     fontSize: 13,
-    fontWeight: 700,
+    fontWeight: 600,
     flexShrink: 0,
-    border: "1px solid var(--border)",
-    boxShadow: "0 1px 2px rgba(8,11,18,0.06)",
-  },
-  avatarYou: {
-    borderColor: "var(--accent)",
   },
   info: {
     flex: 1,
@@ -315,61 +495,98 @@ const styles: Record<string, React.CSSProperties> = {
   },
   nameRow: {
     display: "flex",
-    alignItems: "center",
-    gap: 8,
+    alignItems: "baseline",
     minWidth: 0,
   },
   name: {
     fontSize: 14,
-    fontWeight: 500,
-    color: "var(--text)",
+    color: "#ffffff",
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
   },
-  youBadge: {
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: "0.02em",
-    color: "var(--accent-ink)",
-    background: "var(--accent)",
-    padding: "2px 8px",
-    borderRadius: 999,
-    flexShrink: 0,
+  youTag: {
+    color: "#9aa0a6",
   },
-  subline: {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: 600,
-    color: "var(--accent)",
+  hostTag: {
+    display: "block",
+    fontSize: 12,
+    color: "#9aa0a6",
   },
-  indicators: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    flexShrink: 0,
+  handTag: {
+    display: "block",
+    fontSize: 12,
+    color: "#fbbc04",
   },
-  mutedBadge: {
+  muteBtn: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 26,
-    height: 26,
+    width: 32,
+    height: 32,
     borderRadius: "50%",
-    background: "color-mix(in srgb, var(--danger) 18%, transparent)",
-    color: "var(--danger)",
+    border: "none",
+    background: "transparent",
+    color: "#8ab4f8",
+    cursor: "pointer",
+    flexShrink: 0,
   },
-  noVideoBadge: {
+  muteBtnSelfOff: {
+    color: "#ea4335",
+  },
+  statusIcon: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 26,
-    height: 26,
+    width: 32,
+    height: 32,
+    color: "#9aa0a6",
+    flexShrink: 0,
+  },
+  moreWrap: {
+    position: "relative",
+    flexShrink: 0,
+  },
+  moreBtn: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 32,
+    height: 32,
     borderRadius: "50%",
-    background: "rgba(245,158,11,0.15)",
-    color: "#f59e0b",
+    border: "none",
+    background: "transparent",
+    color: "#ffffff",
+    cursor: "pointer",
+  },
+  menu: {
+    position: "absolute",
+    right: 0,
+    top: 34,
+    minWidth: 190,
+    background: "#3c4043",
+    borderRadius: 10,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+    padding: "6px 0",
+    zIndex: 20,
+  },
+  menuItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    width: "100%",
+    padding: "10px 14px",
+    background: "transparent",
+    border: "none",
+    color: "#ffffff",
+    fontSize: 13,
+    textAlign: "left",
+    cursor: "pointer",
+  },
+  menuNote: {
+    display: "block",
+    padding: "10px 14px",
+    fontSize: 12.5,
+    color: "#9aa0a6",
   },
 };

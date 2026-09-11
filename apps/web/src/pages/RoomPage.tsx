@@ -43,8 +43,9 @@ import { ChatPanel } from "../components/ChatPanel";
 import { ParticipantList } from "../components/ParticipantList";
 import { MeetingTitle } from "../components/MeetingTitle";
 import { RecordingIndicator } from "../components/RecordingIndicator";
-import { SettingsPanel } from "../components/SettingsPanel";
+import { SettingsPanel, type SettingsTab } from "../components/SettingsPanel";
 import { InviteModal } from "../components/InviteModal";
+import { HelpModal, ReportModal } from "../components/SupportModals";
 import { ReactionBar } from "../components/ReactionBar";
 import { ReactionOverlay } from "../components/ReactionOverlay";
 import { PollModal } from "../components/PollModal";
@@ -92,6 +93,9 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
   const [showParticipants, setShowParticipants] = useState(false);
   const [volume, setVolume] = useState(1); // master output volume (0–1)
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("audio");
+  const [showHelp, setShowHelp] = useState(false);
+  const [reportType, setReportType] = useState<"problem" | "abuse" | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   /** View settings ("Adjust view") modal visibility. */
   const [showViewSettings, setShowViewSettings] = useState(false);
@@ -115,6 +119,69 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
       /* ignore */
     }
   }, [isDark]);
+
+  // ── Meet-style preferences (persisted to localStorage) ──────────────
+  // All Settings dialog toggles not backed by LiveKit live here, so every
+  // control in Settings has real, persistent state.
+  interface MeetPrefs {
+    receiveResolution: string;
+    sendDiagnostics: boolean;
+    autoPiP: string;
+    desktopNotifications: boolean;
+    leaveEmptyCalls: boolean;
+    onlyContacts: boolean;
+    adaptiveAudio: boolean;
+    captionsMode: "none" | "live" | "translated";
+    captionLanguage: string;
+    preferredLanguage: string;
+    captionFontSize: string;
+    captionFont: string;
+    showReactionsFromOthers: boolean;
+    reactionAnimation: boolean;
+    reactionSound: boolean;
+    reactionAccessibility: string;
+  }
+  const DEFAULT_PREFS: MeetPrefs = {
+    receiveResolution: "auto",
+    sendDiagnostics: false,
+    autoPiP: "Never",
+    desktopNotifications: false,
+    leaveEmptyCalls: false,
+    onlyContacts: false,
+    adaptiveAudio: false,
+    captionsMode: "none",
+    captionLanguage: "en-US",
+    preferredLanguage: "en-US",
+    captionFontSize: "Default",
+    captionFont: "Default",
+    showReactionsFromOthers: true,
+    reactionAnimation: true,
+    reactionSound: false,
+    reactionAccessibility: "Don't announce reactions",
+  };
+  const [prefs, setPrefs] = useState<MeetPrefs>(() => {
+    try {
+      const raw = localStorage.getItem("huddle_meet_prefs");
+      if (raw) return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+    } catch {
+      /* ignore */
+    }
+    return DEFAULT_PREFS;
+  });
+  // Keep a ref so socket listeners (registered once) read live prefs.
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
+  const participantsRef = useRef(participants);
+  participantsRef.current = participants;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("huddle_meet_prefs", JSON.stringify(prefs));
+    } catch {
+      /* ignore */
+    }
+  }, [prefs]);
+
   /** Latest chat message to show in a toast when the panel is closed (auto-clears). */
   const [chatToast, setChatToast] = useState<ChatMessage | null>(null);
 
@@ -176,6 +243,8 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
   const [isRecordingPaused, setIsRecordingPaused] = useState(false);
   /** Elapsed recording time (seconds) — only counts while actively recording. */
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  /** Hidden video source for the picture-in-picture window. */
+  const pipVideoRef = useRef<HTMLVideoElement | null>(null);
   // ── LiveKit hook ──────────────────────────────────────────────────
   // Manages local/remote media + screen sharing via the LiveKit SFU server.
   const {
@@ -295,6 +364,18 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
         if (!open) {
           setUnreadChat((n) => n + 1);
           setChatToast(message); // show toast preview when panel is closed
+          // Desktop notification (Settings → General)
+          if (
+            prefsRef.current.desktopNotifications &&
+            "Notification" in window &&
+            Notification.permission === "granted"
+          ) {
+            try {
+              new Notification(`New message from ${message.senderName}`, { body: message.text });
+            } catch {
+              /* permission revoked meanwhile */
+            }
+          }
         }
         return open;
       });
@@ -332,9 +413,12 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
     };
 
     // ── Reaction event ─────────────────────────────────────────────────
-    // Emoji reaction broadcast from any participant
+    // Emoji reaction broadcast from any participant (filtered by prefs).
     const handleReactionBroadcast = (reaction: Reaction) => {
+      const p = prefsRef.current;
+      if (!p.showReactionsFromOthers && reaction.userId !== currentUser?.id) return;
       setRecentReactions((prev) => [...prev, reaction]);
+      if (p.reactionSound) playReactionSound();
     };
 
 
@@ -663,6 +747,93 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
     socket?.emit(SOCKET_EVENTS.HOST_MUTE_ALL);
   }, [socket]);
 
+  // ── More-menu actions (Meet) ────────────────────────────────────────
+  /** Toggle browser fullscreen for the meeting page. */
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    else void document.documentElement.requestFullscreen().catch(() => {});
+  }, []);
+
+  /** Open the local camera in a floating picture-in-picture window. */
+  const togglePiP = useCallback(() => {
+    if (!("pictureInPictureEnabled" in document)) return;
+    if (document.pictureInPictureElement) {
+      void document.exitPictureInPicture().catch(() => {});
+      return;
+    }
+    let vid = pipVideoRef.current;
+    if (!vid) {
+      vid = document.createElement("video");
+      vid.muted = true;
+      vid.playsInline = true;
+      pipVideoRef.current = vid;
+    }
+    if (localStream && vid.srcObject !== localStream) vid.srcObject = localStream;
+    const api = vid as HTMLVideoElement & {
+      requestPictureInPicture?: () => Promise<unknown>;
+    };
+    if (api.requestPictureInPicture) {
+      api.requestPictureInPicture().catch(() => {});
+    }
+  }, [localStream]);
+
+  /** Open Settings on the Video tab (backgrounds & effects). */
+  const openBackgrounds = useCallback(() => {
+    setSettingsTab("video");
+    setShowSettings(true);
+  }, []);
+
+  /** Open Settings on the Video tab (camera chevron). */
+  const openCameraOptions = useCallback(() => {
+    setSettingsTab("video");
+    setShowSettings(true);
+  }, []);
+
+  /** Report a problem / abuse → prefilled mailto dialog. */
+  const handleReport = useCallback((type: "problem" | "abuse") => {
+    setReportType(type);
+  }, []);
+
+  /** Short pleasant chime when a reaction arrives (Settings → Reactions). */
+  const playReactionSound = useCallback(() => {
+    try {
+      const Ctx =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 740;
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.28);
+    } catch {
+      /* audio blocked */
+    }
+  }, []);
+
+  // ── Leave empty calls (Settings → General) ──────────────────────────
+  // After 2 minutes alone in a meeting (when enabled), offer to leave.
+  const [showEmptyCallBanner, setShowEmptyCallBanner] = useState(false);
+  useEffect(() => {
+    if (!prefs.leaveEmptyCalls || !room) {
+      setShowEmptyCallBanner(false);
+      return;
+    }
+    if (participantsRef.current.length > 1) {
+      setShowEmptyCallBanner(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (participantsRef.current.length <= 1) setShowEmptyCallBanner(true);
+    }, 2 * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, [prefs.leaveEmptyCalls, room]);
+
   // ════════════════════════════════════════════════════════════════════
   // RENDER: Special states (meeting ended, waiting room)
   // ════════════════════════════════════════════════════════════════════
@@ -767,7 +938,7 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
           />
 
           {/* Floating emoji reaction animations */}
-          <ReactionOverlay reactions={recentReactions} />
+          <ReactionOverlay reactions={recentReactions} animate={prefs.reactionAnimation} />
 
           {/* Speech-to-text subtitle overlay */}
           <LiveCaptions
@@ -777,6 +948,9 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
             onSegment={(seg) => setCaptionSegments((prev) => [...prev.slice(-20), seg])}
             userName={currentUser?.name ?? ""}
             userId={currentUser?.id ?? ""}
+            language={prefs.captionsMode === "translated" ? prefs.preferredLanguage : prefs.captionLanguage}
+            captionFontSize={prefs.captionFontSize}
+            captionFont={prefs.captionFont}
           />
 
           {/* Waiting room panel (host only, shown when users are waiting) */}
@@ -820,6 +994,12 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
               onMuteUser={handleMuteUser}
               onUnmuteUser={handleUnmuteUser}
               onMuteAll={handleMuteAll}
+              onClose={() => {
+                setShowParticipants(false);
+                setShowChat(false);
+              }}
+              onToggleSelfMic={handleToggleMute}
+              onToggleSelfCamera={handleToggleVideo}
             />
           )}
 {showChat && (
@@ -827,6 +1007,10 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
             messages={messages}
             onSend={handleSendMessage}
             currentUserId={currentUser?.id}
+            onClose={() => {
+              setShowChat(false);
+              setShowParticipants(false);
+            }}
           />
         )}
         </div>
@@ -853,10 +1037,19 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
           setShowChat(false);
         }}
         onLeave={handleLeave}
-        onToggleSettings={() => setShowSettings((v) => !v)}
+        onToggleSettings={() => {
+          setSettingsTab("audio");
+          setShowSettings(true);
+        }}
         onToggleHandRaise={handleToggleHandRaise}
         onToggleInvite={() => setShowInvite((v) => !v)}
         onToggleLayout={() => setShowViewSettings((v) => !v)}
+        onToggleFullscreen={toggleFullscreen}
+        onTogglePiP={togglePiP}
+        onOpenBackgrounds={openBackgrounds}
+        onOpenCameraOptions={openCameraOptions}
+        onReport={handleReport}
+        onHelp={() => setShowHelp(true)}
         onToggleRecord={handleToggleRecord}
         onStopRecord={handleStopRecord}
         isHandRaised={currentUser?.isHandRaised ?? false}
@@ -867,33 +1060,78 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
         onToggleLock={handleToggleLock}
         isDark={isDark}
         onToggleDark={() => setIsDark((v) => !v)}
-        layout={layout}
         onToggleReactions={handleToggleReactions}
         onTogglePolls={() => setShowPolls((v) => !v)}
         showReactions={showReactions}
         showPolls={showPolls}
         unreadChat={unreadChat}
         isPushToTalk={isPushToTalk}
-        onTogglePushToTalk={() => setIsPushToTalk((v) => !v)}
         onPushToTalkStart={pushToTalk.startTalking}
         onPushToTalkStop={pushToTalk.stopTalking}
         pushToTalkHotkey={pushToTalkHotkey}
-        onPushToTalkHotkeyChange={setPushToTalkHotkey}
         isCaptionsEnabled={isCaptionEnabled}
         onToggleCaptions={handleToggleCaptions}
-        isNoiseSuppression={noiseSuppression}
-        onToggleNoiseSuppression={() => void toggleNoiseSuppression()}
         onMuteAll={handleMuteAll}
-        volume={volume}
-        onVolumeChange={setVolume}
       />
 
       {/* ── Modals (overlay panels) ────────────────────────────────── */}
       {showSettings && (
         <SettingsPanel
           onClose={() => setShowSettings(false)}
+          initialTab={settingsTab}
           onApplySettings={handleApplySettings}
           currentSettings={settings}
+          isNoiseSuppression={noiseSuppression}
+          onToggleNoiseSuppression={() => void toggleNoiseSuppression()}
+          isPushToTalk={isPushToTalk}
+          onTogglePushToTalk={() => setIsPushToTalk((v) => !v)}
+          pushToTalkHotkey={pushToTalkHotkey}
+          onPushToTalkHotkeyChange={setPushToTalkHotkey}
+          volume={volume}
+          onVolumeChange={setVolume}
+          onToggleCaptions={(enabled) => {
+            setIsCaptionEnabled(enabled);
+            if (socket) socket.emit(SOCKET_EVENTS.CAPTION_TOGGLE, { enabled });
+          }}
+          captionsMode={prefs.captionsMode}
+          onCaptionsModeChange={(mode) => setPrefs((p) => ({ ...p, captionsMode: mode }))}
+          captionLanguage={prefs.captionLanguage}
+          onCaptionLanguageChange={(lang) => setPrefs((p) => ({ ...p, captionLanguage: lang }))}
+          preferredLanguage={prefs.preferredLanguage}
+          onPreferredLanguageChange={(lang) => setPrefs((p) => ({ ...p, preferredLanguage: lang }))}
+          captionFontSize={prefs.captionFontSize}
+          captionFont={prefs.captionFont}
+          onCaptionStyleChange={(style) => setPrefs((p) => ({ ...p, ...style }))}
+          sendDiagnostics={prefs.sendDiagnostics}
+          onSendDiagnosticsChange={(v) => setPrefs((p) => ({ ...p, sendDiagnostics: v }))}
+          autoPiP={prefs.autoPiP}
+          onAutoPiPChange={(v) => setPrefs((p) => ({ ...p, autoPiP: v }))}
+          desktopNotifications={prefs.desktopNotifications}
+          onDesktopNotificationsChange={(v) => setPrefs((p) => ({ ...p, desktopNotifications: v }))}
+          leaveEmptyCalls={prefs.leaveEmptyCalls}
+          onLeaveEmptyCallsChange={(v) => setPrefs((p) => ({ ...p, leaveEmptyCalls: v }))}
+          onlyContacts={prefs.onlyContacts}
+          onOnlyContactsChange={(v) => setPrefs((p) => ({ ...p, onlyContacts: v }))}
+          adaptiveAudio={prefs.adaptiveAudio}
+          onAdaptiveAudioChange={(v) => setPrefs((p) => ({ ...p, adaptiveAudio: v }))}
+          receiveResolution={prefs.receiveResolution}
+          onReceiveResolutionChange={(v) => setPrefs((p) => ({ ...p, receiveResolution: v }))}
+          showReactionsFromOthers={prefs.showReactionsFromOthers}
+          onShowReactionsFromOthersChange={(v) => setPrefs((p) => ({ ...p, showReactionsFromOthers: v }))}
+          reactionAnimation={prefs.reactionAnimation}
+          onReactionAnimationChange={(v) => setPrefs((p) => ({ ...p, reactionAnimation: v }))}
+          reactionSound={prefs.reactionSound}
+          onReactionSoundChange={(v) => setPrefs((p) => ({ ...p, reactionSound: v }))}
+          reactionAccessibility={prefs.reactionAccessibility}
+          onReactionAccessibilityChange={(v) => setPrefs((p) => ({ ...p, reactionAccessibility: v }))}
+        />
+      )}
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {reportType && (
+        <ReportModal
+          type={reportType}
+          roomCode={room?.code}
+          onClose={() => setReportType(null)}
         />
       )}
       {showInvite && room && (
@@ -916,12 +1154,26 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
           onClose={() => setShowViewSettings(false)}
         />
       )}
+      {/* Leave empty call banner (Settings → General) */}
+      {showEmptyCallBanner && (
+        <div style={styles.emptyCallBanner}>
+          <span style={styles.emptyCallText}>
+            No one else is here. Leave this empty call?
+          </span>
+          <button style={styles.emptyCallStay} onClick={() => setShowEmptyCallBanner(false)}>
+            Stay
+          </button>
+          <button style={styles.emptyCallLeave} onClick={handleLeave}>
+            Leave
+          </button>
+        </div>
+      )}
       {/* End meeting button (host only, floating above control bar) */}
       {currentUser?.isHost && (
         <button
           style={{
             ...styles.endMeetingBtn,
-            right: showChat || showParticipants ? 356 : 20,
+            right: showChat || showParticipants ? 380 : 20,
           }}
           onClick={handleEndMeeting}
           title="End meeting for all"

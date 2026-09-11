@@ -1,17 +1,21 @@
 /**
- * @file ControlBar — the bottom toolbar with all meeting controls.
+ * @file ControlBar — Google Meet-style bottom control bar for the Huddle room.
  *
- * Renders buttons for: mute, camera, screen share, hand raise, recording,
- * layout toggle, chat, participants, invite, settings, AI companion,
- * reactions, polls, and leave meeting.
+ * Layout (matches Meet):
+ *   [⋯ More] [🎤 Mic] [▾+📷 Camera] [🖥 Screen share] [😊 Reactions]
+ *   [CC Captions] [🙋 Raise hand] [⋮ More options]        [🔴 Leave]
  *
- * Each button shows active state (highlighted background) when its feature is on.
- * The leave button is visually separated and styled red.
+ * A vertical rail on the right edge holds Chat + People (participants).
+ * The "More" menu (image-matched) contains: recording status/controls,
+ * Adjust view, Full screen, Picture-in-picture, Backgrounds and effects,
+ * Report a problem, Report abuse, Troubleshooting & help, Settings.
  *
- * Connects to: RoomPage (provides all state and handler callbacks),
- *              lucide-react icons (button icons)
+ * The room chrome is intentionally dark (like Meet) regardless of the app
+ * light/dark theme, so the meeting view always looks familiar.
  */
 
+import { useState, useEffect } from "react";
+import type { CSSProperties } from "react";
 import {
   Mic,
   MicOff,
@@ -21,29 +25,50 @@ import {
   MessageSquare,
   Users,
   PhoneOff,
-  Settings,
   Hand,
-  UserPlus,
-  LayoutGrid,
-  LayoutPanelTop,
+  Smile,
+  Captions,
+  MoreHorizontal,
+  MoreVertical,
+  ChevronUp,
   Circle,
   Pause,
   Play,
-  Lock,
-  LockOpen,
-  MoreHorizontal,
-  Smile,
+  Square,
+  LayoutGrid,
+  Fullscreen,
+  PictureInPicture2,
+  Sparkles,
+  Flag,
+  ShieldAlert,
+  HelpCircle,
+  Settings,
+  UserPlus,
   BarChart3,
-  Keyboard,
   Sun,
   Moon,
-  Captions,
-  ChevronDown,
+  Lock,
+  LockOpen,
+  VolumeX,
 } from "lucide-react";
-import { useState, useEffect } from "react";
-import type { LayoutMode } from "@meet-app/shared";
 import { formatHotkey } from "../hooks/usePushToTalk";
-import { VoiceMenu } from "./VoiceMenu";
+
+/** Google Meet dark chrome palette (independent of the app theme). */
+const MEET = {
+  panel: "#202124",
+  panelBorder: "rgba(255,255,255,0.12)",
+  btn: "rgba(255,255,255,0.10)",
+  btnHover: "rgba(255,255,255,0.18)",
+  btnActiveBg: "#8ab4f8",
+  btnActiveInk: "#0b0e14",
+  icon: "#ffffff",
+  text: "#ffffff",
+  textDim: "rgba(255,255,255,0.72)",
+  danger: "#ea4335",
+  dangerInk: "#ffffff",
+  camOffBg: "#f28b82",
+  camOffInk: "#000000",
+};
 
 interface ControlBarProps {
   isMuted: boolean;
@@ -62,7 +87,16 @@ interface ControlBarProps {
   onToggleSettings: () => void;
   onToggleHandRaise: () => void;
   onToggleInvite: () => void;
+  /** Adjust view modal (layout picker). */
   onToggleLayout: () => void;
+  onToggleFullscreen: () => void;
+  onTogglePiP: () => void;
+  /** Open the Settings modal on the Video tab (backgrounds & effects). */
+  onOpenBackgrounds: () => void;
+  /** Open the Settings modal on the Video tab (camera/background). */
+  onOpenCameraOptions: () => void;
+  onReport: (type: "problem" | "abuse") => void;
+  onHelp: () => void;
   onToggleRecord: () => void;
   onStopRecord: () => void;
   isHandRaised: boolean;
@@ -79,38 +113,26 @@ interface ControlBarProps {
   onToggleDark: () => void;
   /** Whether live captions are active for the room. */
   isCaptionsEnabled: boolean;
-  /** Toggle live captions (emits to room). */
   onToggleCaptions: () => void;
-  /** Whether browser-native noise suppression is active on the mic. */
-  isNoiseSuppression: boolean;
-  onToggleNoiseSuppression: () => void;
-  layout: LayoutMode;
   onToggleReactions: () => void;
   onTogglePolls: () => void;
   showReactions: boolean;
   showPolls: boolean;
-  /** Number of unread chat messages (badge on the chat button). */
+  /** Number of unread chat messages (badge on the Chat rail button). */
   unreadChat: number;
   /** Whether push-to-talk mode is active (mic muted unless hotkey held). */
   isPushToTalk: boolean;
-  onTogglePushToTalk: () => void;
-  /** Start/stop talking via the hold-to-talk button (mouse hold). */
   onPushToTalkStart: () => void;
   onPushToTalkStop: () => void;
-  /** The configured push-to-talk hotkey (raw key value, " " for Space). */
   pushToTalkHotkey: string;
-  onPushToTalkHotkeyChange: (key: string) => void;
-  /** Host action: mute all participants (from the Voice menu). */
+  /** Host action: mute all participants (More menu). */
   onMuteAll: () => void;
-  /** Master output volume for remote audio (0–1). */
-  volume: number;
-  onVolumeChange: (v: number) => void;
 }
 
 /**
- * Bottom control bar with all meeting action buttons.
- * Core controls stay visible; Reactions and Polls are grouped under a
- * "More" menu to keep the bar concise.
+ * Bottom control bar with all meeting action buttons (Meet layout).
+ * Reactions, captions and raise-hand are direct buttons; recording,
+ * view options, fullscreen, PiP and support items live in the More menu.
  */
 export function ControlBar({
   isMuted,
@@ -129,11 +151,17 @@ export function ControlBar({
   onToggleHandRaise,
   onToggleInvite,
   onToggleLayout,
-  isRecording,
-  isRecordingPaused,
+  onToggleFullscreen,
+  onTogglePiP,
+  onOpenBackgrounds,
+  onOpenCameraOptions,
+  onReport,
+  onHelp,
   onToggleRecord,
   onStopRecord,
   isHandRaised,
+  isRecording,
+  isRecordingPaused,
   isHost,
   isLocked,
   onToggleLock,
@@ -141,463 +169,557 @@ export function ControlBar({
   onToggleDark,
   isCaptionsEnabled,
   onToggleCaptions,
-  isNoiseSuppression,
-  onToggleNoiseSuppression,
-  layout,
   onToggleReactions,
   onTogglePolls,
   showReactions,
   showPolls,
   unreadChat,
   isPushToTalk,
-  onTogglePushToTalk,
   onPushToTalkStart,
   onPushToTalkStop,
   pushToTalkHotkey,
-  onPushToTalkHotkeyChange,
   onMuteAll,
-  volume,
-  onVolumeChange,
 }: ControlBarProps) {
   const [showMore, setShowMore] = useState(false);
-  const [showVoice, setShowVoice] = useState(false);
 
-  // Close the Voice menu when clicking anywhere else (prevents it lingering
-  // over the video and looking like an overlap).
+  // Close the More menu when clicking anywhere outside it.
   useEffect(() => {
-    if (!showVoice) return;
+    if (!showMore) return;
     const onDocClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest(".ctl-vmenu") || target.closest("[class*='voiceWrap']")) return;
-      setShowVoice(false);
+      if (target.closest(".ctl-more-anchor") || target.closest(".ctl-more-menu")) return;
+      setShowMore(false);
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
-  }, [showVoice]);
+  }, [showMore]);
+
+  const micToggled = isPushToTalk ? false : isMuted;
 
   return (
-    <div className="ctl-bar" style={styles.bar}>
-      <div className="ctl-left-spacer" style={styles.leftSpacer} />
-      <div className="ctl-controls" style={styles.controls}>
-        {/* ── Media controls ──────────────────────────────────────── */}
-        <div style={styles.group}>
-          {/* Mic + chevron → Voice menu (noise suppression, PTT, mute) */}
-          <div style={styles.voiceWrap}>
+    <>
+      {/* ── Right vertical rail: Chat + People (Meet side rail) ────── */}
+      <div className="ctl-rail" style={styles.rail}>
+        <button
+          style={{ ...styles.railBtn, ...(showChat ? styles.railBtnActive : null) }}
+          onClick={onToggleChat}
+          title="Chat"
+        >
+          <MessageSquare size={20} />
+          {unreadChat > 0 && <span style={styles.railBadge}>{unreadChat}</span>}
+        </button>
+        <button
+          style={{ ...styles.railBtn, ...(showParticipants ? styles.railBtnActive : null) }}
+          onClick={onToggleParticipants}
+          title="People"
+        >
+          <Users size={20} />
+        </button>
+      </div>
+
+      {/* ── Bottom control bar ────────────────────────────────────── */}
+      <div className="ctl-bar" style={styles.bar}>
+        <div className="ctl-controls" style={styles.controls}>
+          {/* More menu trigger (left) */}
+          <div className="ctl-more-anchor" style={styles.anchor}>
             <button
-              style={{
-                ...styles.controlButton,
-                background: isPushToTalk
-                  ? isMuted
-                    ? "var(--danger)"
-                    : "var(--accent)"
-                  : isMuted
-                    ? "var(--danger)"
-                    : "var(--bg-soft)",
-                color: isPushToTalk && !isMuted ? "var(--accent-ink)" : "var(--text)",
-                boxShadow: isSpeaking && !isMuted ? "0 0 0 3px var(--accent)" : undefined,
-              }}
-              onClick={isPushToTalk ? undefined : onToggleMute}
-              onPointerDown={
-                isPushToTalk
-                  ? (e) => {
-                      e.preventDefault();
-                      onPushToTalkStart();
-                    }
-                  : undefined
-              }
-              onPointerUp={isPushToTalk ? onPushToTalkStop : undefined}
-              onPointerLeave={isPushToTalk ? onPushToTalkStop : undefined}
-              onPointerCancel={isPushToTalk ? onPushToTalkStop : undefined}
-              title={
-                isPushToTalk
-                  ? `Push to talk — hold to talk (${formatHotkey(pushToTalkHotkey)})`
-                  : isMuted
-                    ? "Unmute"
-                    : "Mute"
-              }
+              className="ctl-btn"
+              style={styles.btn}
+              onClick={() => setShowMore((v) => !v)}
+              title="More"
             >
-              {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+              <MoreHorizontal size={20} />
             </button>
-            <button
-              style={{
-                ...styles.controlButton,
-                ...styles.voiceChevron,
-                background: showVoice || isNoiseSuppression || isPushToTalk ? "var(--bg-soft)" : "transparent",
-              }}
-              onClick={() => setShowVoice((v) => !v)}
-              title="Voice settings (noise suppression, push to talk, mute)"
-            >
-              <ChevronDown size={16} />
-            </button>
-            {showVoice && (
-              <VoiceMenu
-                isMuted={isMuted}
-                onToggleMute={onToggleMute}
-                isNoiseSuppression={isNoiseSuppression}
-                onToggleNoiseSuppression={onToggleNoiseSuppression}
-                isPushToTalk={isPushToTalk}
-                onTogglePushToTalk={onTogglePushToTalk}
-                pushToTalkHotkey={pushToTalkHotkey}
-                onPushToTalkHotkeyChange={onPushToTalkHotkeyChange}
-                isHost={isHost}
-                onMuteAll={onMuteAll}
-                volume={volume}
-                onVolumeChange={onVolumeChange}
-                onClose={() => setShowVoice(false)}
-              />
-            )}
           </div>
+
+          {/* Mic — plain toggle (audio settings live in Settings > Audio) */}
           <button
+            className="ctl-btn"
             style={{
-              ...styles.controlButton,
-              background: isVideoOff ? "var(--danger)" : "var(--bg-soft)",
+              ...styles.btn,
+              background: micToggled ? MEET.danger : MEET.btn,
+              color: micToggled ? MEET.dangerInk : MEET.icon,
+              boxShadow: isSpeaking && !micToggled ? `0 0 0 3px ${MEET.btnActiveBg}` : undefined,
             }}
-            onClick={onToggleVideo}
-            title={isVideoOff ? "Turn on camera" : "Turn off camera"}
+            onClick={isPushToTalk ? undefined : onToggleMute}
+            onPointerDown={
+              isPushToTalk
+                ? (e) => {
+                    e.preventDefault();
+                    onPushToTalkStart();
+                  }
+                : undefined
+            }
+            onPointerUp={isPushToTalk ? onPushToTalkStop : undefined}
+            onPointerLeave={isPushToTalk ? onPushToTalkStop : undefined}
+            onPointerCancel={isPushToTalk ? onPushToTalkStop : undefined}
+            title={
+              isPushToTalk
+                ? `Push to talk — hold to talk (${formatHotkey(pushToTalkHotkey)})`
+                : micToggled
+                  ? "Unmute"
+                  : "Mute"
+            }
           >
-            {isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}
+            {micToggled ? <MicOff size={20} /> : <Mic size={20} />}
           </button>
+
+          {/* Camera composite: chevron (options) + camera toggle */}
+          <div style={styles.camWrap}>
+            <button
+              className="ctl-btn ctl-camopt"
+              style={styles.camChevron}
+              onClick={onOpenCameraOptions}
+              title="Camera options"
+            >
+              <ChevronUp size={16} />
+            </button>
+            <button
+              className="ctl-btn"
+              style={{
+                ...styles.btn,
+                background: isVideoOff ? MEET.camOffBg : MEET.btn,
+                color: isVideoOff ? MEET.camOffInk : MEET.icon,
+              }}
+              onClick={onToggleVideo}
+              title={isVideoOff ? "Turn on camera" : "Turn off camera"}
+            >
+              {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
+            </button>
+          </div>
+
+          {/* Screen share */}
           <button
+            className="ctl-btn"
             style={{
-              ...styles.controlButton,
-              background: isScreenSharing ? "var(--accent)" : "var(--bg-soft)",
-              color: isScreenSharing ? "var(--accent-ink)" : "var(--text)",
+              ...styles.btn,
+              background: isScreenSharing ? MEET.btnActiveBg : MEET.btn,
+              color: isScreenSharing ? MEET.btnActiveInk : MEET.icon,
             }}
             onClick={onToggleScreenShare}
             title={isScreenSharing ? "Stop sharing" : "Share screen"}
           >
-            <Monitor size={18} />
+            <Monitor size={20} />
           </button>
-        </div>
 
-        <div style={styles.groupDivider} />
+          <div style={styles.divider} />
 
-        {/* ── Engage controls ─────────────────────────────────────── */}
-        <div style={styles.group}>
+          {/* Reactions */}
           <button
+            className="ctl-btn"
             style={{
-              ...styles.controlButton,
-              background: isHandRaised ? "var(--accent)" : "var(--bg-soft)",
-              color: isHandRaised ? "var(--accent-ink)" : "var(--text)",
+              ...styles.btn,
+              background: showReactions ? MEET.btnActiveBg : MEET.btn,
+              color: showReactions ? MEET.btnActiveInk : MEET.icon,
+            }}
+            onClick={onToggleReactions}
+            title="Reactions"
+          >
+            <Smile size={20} />
+          </button>
+
+          {/* Captions */}
+          <button
+            className="ctl-btn"
+            style={{
+              ...styles.btn,
+              background: isCaptionsEnabled ? MEET.btnActiveBg : MEET.btn,
+              color: isCaptionsEnabled ? MEET.btnActiveInk : MEET.icon,
+            }}
+            onClick={onToggleCaptions}
+            title="Captions"
+          >
+            <Captions size={20} />
+          </button>
+
+          {/* Raise hand */}
+          <button
+            className="ctl-btn"
+            style={{
+              ...styles.btn,
+              background: isHandRaised ? MEET.btnActiveBg : MEET.btn,
+              color: isHandRaised ? MEET.btnActiveInk : MEET.icon,
             }}
             onClick={onToggleHandRaise}
             title={isHandRaised ? "Lower hand" : "Raise hand"}
           >
-            <Hand size={18} />
+            <Hand size={20} />
           </button>
-          <button
-            style={{
-              ...styles.controlButton,
-              background: isRecording ? (isRecordingPaused ? "var(--accent)" : "var(--danger)") : "var(--bg-soft)",
-              color: isRecordingPaused ? "var(--accent-ink)" : "var(--text)",
-            }}
-            onClick={onToggleRecord}
-            title={
-              !isRecording
-                ? "Start recording"
-                : isRecordingPaused
-                  ? "Resume recording"
-                  : "Pause recording"
-            }
-          >
-            {!isRecording ? <Circle size={18} /> : isRecordingPaused ? <Play size={18} /> : <Pause size={18} />}
-          </button>
-          <button
-            style={{
-              ...styles.controlButton,
-              background: "var(--bg-soft)",
-            }}
-            onClick={onToggleLayout}
-            title={layout === "grid" ? "Switch to speaker view" : "Switch to grid view"}
-          >
-            {layout === "grid" ? <LayoutPanelTop size={18} /> : <LayoutGrid size={18} />}
-          </button>
-          {isHost && (
-            <button
-              style={{
-                ...styles.controlButton,
-                background: isLocked ? "var(--accent)" : "var(--bg-soft)",
-                color: isLocked ? "var(--accent-ink)" : "var(--text)",
-              }}
-              onClick={onToggleLock}
-              title={isLocked ? "Unlock room" : "Lock room"}
-            >
-              {isLocked ? <Lock size={18} /> : <LockOpen size={18} />}
-            </button>
-          )}
-        </div>
 
-        <div style={styles.groupDivider} />
-        {/* ── Panel controls ──────────────────────────────────────── */}
-        <div style={styles.group}>
-          <button
-            style={{
-              ...styles.controlButton,
-              background: showChat ? "var(--accent)" : "var(--bg-soft)",
-              color: showChat ? "var(--accent-ink)" : "var(--text)",
-            }}
-            onClick={onToggleChat}
-            title="Chat"
-          >
-            <MessageSquare size={18} />
-            {unreadChat > 0 && <span style={styles.chatBadge}>{unreadChat}</span>}
-          </button>
-          <button
-            style={{
-              ...styles.controlButton,
-              background: showParticipants ? "var(--accent)" : "var(--bg-soft)",
-              color: showParticipants ? "var(--accent-ink)" : "var(--text)",
-            }}
-            onClick={onToggleParticipants}
-            title="Participants"
-          >
-            <Users size={18} />
-          </button>
-          <button
-            style={{
-              ...styles.controlButton,
-              background: "var(--bg-soft)",
-            }}
-            onClick={onToggleInvite}
-            title="Invite"
-          >
-            <UserPlus size={18} />
-          </button>
-        </div>
+          <div style={styles.divider} />
 
-        <div style={styles.groupDivider} />
-        {/* ── More menu (Reactions, Polls) ────────────────────────── */}
-        <div style={styles.moreWrap}>
+          {/* More options (right) — same menu */}
           <button
-            style={{ ...styles.controlButton, background: "var(--bg-soft)" }}
+            className="ctl-btn"
+            style={styles.btn}
             onClick={() => setShowMore((v) => !v)}
-            title="More"
+            title="More options"
           >
-            <MoreHorizontal size={18} />
+            <MoreVertical size={20} />
           </button>
-          {showMore && (
-            <div style={styles.moreMenu}>
-              {isRecording && (
+
+          {/* Leave / end call (red, far right) */}
+          <button
+            className="ctl-btn"
+            style={{ ...styles.btn, ...styles.leaveBtn }}
+            onClick={onLeave}
+            title="Leave"
+          >
+            <PhoneOff size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── More menu (3-dot) ─────────────────────────────────────── */}
+      {showMore && (
+        <div className="ctl-more-menu" style={styles.moreMenu}>
+          {isHost ? (
+            // Host: recording controls live here (Meet keeps them in the menu)
+            <div style={styles.recBlock}>
+              {isRecording ? (
+                <div style={styles.recRow}>
+                  <span style={styles.recStatus}>
+                    <span style={styles.recDot} />
+                    Recording {isRecordingPaused ? "(paused)" : ""}
+                  </span>
+                  <button
+                    className="ctl-more-item"
+                    style={styles.moreItemInline}
+                    onClick={() => {
+                      onToggleRecord();
+                      setShowMore(false);
+                    }}
+                    title={isRecordingPaused ? "Resume recording" : "Pause recording"}
+                  >
+                    {isRecordingPaused ? <Play size={16} /> : <Pause size={16} />}
+                    {isRecordingPaused ? "Resume" : "Pause"}
+                  </button>
+                  <button
+                    className="ctl-more-item"
+                    style={styles.moreItemInline}
+                    onClick={() => {
+                      onStopRecord();
+                      setShowMore(false);
+                    }}
+                    title="Stop recording"
+                  >
+                    <Square size={16} /> Stop
+                  </button>
+                </div>
+              ) : (
                 <button
                   className="ctl-more-item"
-                  style={styles.moreItem}
-                  onClick={() => { onStopRecord(); setShowMore(false); }}
+                  style={styles.recStart}
+                  onClick={() => {
+                    onToggleRecord();
+                    setShowMore(false);
+                  }}
+                  title="Start recording"
                 >
-                  <Circle size={16} /> Stop &amp; Download
+                  <Circle size={16} /> Start recording
                 </button>
               )}
-              <div style={styles.moreDivider} />
-              <button
-                className="ctl-more-item"
-                style={styles.moreItem}
-                onClick={() => { onToggleDark(); setShowMore(false); }}
-              >
-                {isDark ? <Sun size={16} /> : <Moon size={16} />} {isDark ? "Light mode" : "Dark mode"}
-              </button>
-              <button
-                className="ctl-more-item"
-                style={styles.moreItem}
-                onClick={() => { onToggleSettings(); setShowMore(false); }}
-              >
-                <Settings size={16} /> Settings
-              </button>
-              <div className="ctl-more-item" style={styles.moreItem}>
-                <Keyboard size={16} /> Push-to-talk key
-                <input
-                  style={styles.hotkeyInput}
-                  value={formatHotkey(pushToTalkHotkey)}
-                  readOnly
-                  onKeyDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onPushToTalkHotkeyChange(e.key);
-                  }}
-                  title="Click, then press the key you want to hold to talk"
-                />
+            </div>
+          ) : (
+            <div style={styles.recBlock}>
+              <div style={styles.recUnavailable}>
+                <span style={styles.recUnavailableTitle}>Recording unavailable</span>
+                <span style={styles.recUnavailableSub}>
+                  You're not allowed to record this video call
+                </span>
               </div>
-              <div style={styles.moreDivider} />
-              <button
-                className="ctl-more-item"
-                style={styles.moreItem}
-                onClick={() => { onToggleCaptions(); setShowMore(false); }}
-              >
-                <Captions size={16} /> {isCaptionsEnabled ? "Hide Captions" : "Live Captions"}
-              </button>
-              <button
-                className="ctl-more-item"
-                style={styles.moreItem}
-                onClick={() => { onToggleReactions(); setShowMore(false); }}
-              >
-                <Smile size={16} /> {showReactions ? "Hide Reactions" : "Reactions"}
-              </button>
-              <button
-                className="ctl-more-item"
-                style={styles.moreItem}
-                onClick={() => { onTogglePolls(); setShowMore(false); }}
-              >
-                <BarChart3 size={16} /> {showPolls ? "Hide Polls" : "Polls"}
-              </button>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* ── Leave meeting (right, red) ────────────────────────────── */}
-      <div className="ctl-right-spacer" style={styles.rightSpacer}>
-        <button
-          style={{ ...styles.controlButton, ...styles.leaveButton }}
-          onClick={onLeave}
-          title="Leave"
-        >
-          <PhoneOff size={18} />
-        </button>
-      </div>
-    </div>
+          {/* View options */}
+          <div style={styles.moreGroup}>
+            <MenuRow icon={<LayoutGrid size={18} />} label="Adjust view" onClick={() => { onToggleLayout(); setShowMore(false); }} />
+            <MenuRow icon={<Fullscreen size={18} />} label="Full screen" onClick={() => { onToggleFullscreen(); setShowMore(false); }} />
+            <MenuRow icon={<PictureInPicture2 size={18} />} label="Open picture-in-picture" onClick={() => { onTogglePiP(); setShowMore(false); }} />
+            <MenuRow icon={<Sparkles size={18} />} label="Backgrounds and effects" onClick={() => { onOpenBackgrounds(); setShowMore(false); }} />
+          </div>
+
+          <div style={styles.moreDivider} />
+
+          {/* Support / settings group */}
+          <div style={styles.moreGroup}>
+            <MenuRow icon={<Flag size={18} />} label="Report a problem" onClick={() => { onReport("problem"); setShowMore(false); }} />
+            <MenuRow icon={<ShieldAlert size={18} />} label="Report abuse" onClick={() => { onReport("abuse"); setShowMore(false); }} />
+            <MenuRow icon={<HelpCircle size={18} />} label="Troubleshooting & help" onClick={() => { onHelp(); setShowMore(false); }} />
+            <MenuRow icon={<Settings size={18} />} label="Settings" onClick={() => { onToggleSettings(); setShowMore(false); }} />
+          </div>
+
+          <div style={styles.moreDivider} />
+
+          {/* App extras (invite, polls, theme, host moderation) */}
+          <div style={styles.moreGroup}>
+            {isHost && (
+              <MenuRow
+                icon={isLocked ? <Lock size={18} /> : <LockOpen size={18} />}
+                label={isLocked ? "Unlock room" : "Lock room"}
+                onClick={() => { onToggleLock(); setShowMore(false); }}
+              />
+            )}
+            {isHost && (
+              <MenuRow icon={<VolumeX size={18} />} label="Mute all participants" onClick={() => { onMuteAll(); setShowMore(false); }} />
+            )}
+            <MenuRow icon={<UserPlus size={18} />} label="Invite" onClick={() => { onToggleInvite(); setShowMore(false); }} />
+            <MenuRow icon={<BarChart3 size={18} />} label={showPolls ? "Hide Polls" : "Polls"} onClick={() => { onTogglePolls(); setShowMore(false); }} />
+            <MenuRow
+              icon={isDark ? <Sun size={18} /> : <Moon size={18} />}
+              label={isDark ? "Light mode" : "Dark mode"}
+              onClick={() => { onToggleDark(); setShowMore(false); }}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+/** A single icon + label menu row. */
+function MenuRow({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button className="ctl-more-item" style={styles.moreItem} onClick={onClick}>
+      <span style={styles.moreItemIcon}>{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+const styles: Record<string, CSSProperties> = {
+  /* ── Right vertical rail ── */
+  rail: {
+    position: "fixed",
+    right: 16,
+    top: "50%",
+    transform: "translateY(-50%)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    zIndex: 60,
+  },
+  railBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: MEET.btn,
+    color: MEET.icon,
+    border: "none",
+    position: "relative",
+    WebkitBackdropFilter: "blur(12px)",
+    backdropFilter: "blur(12px)",
+  },
+  railBtnActive: {
+    background: MEET.btnActiveBg,
+    color: MEET.btnActiveInk,
+  },
+  railBadge: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 999,
+    background: MEET.danger,
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: 700,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 4px",
+  },
+
+  /* ── Bottom bar ── */
   bar: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: "14px 24px",
-    borderTop: "1px solid var(--border)",
-    background: "color-mix(in srgb, var(--bg-card) 82%, transparent)",
-    backdropFilter: "blur(14px)",
-    // Positioned above the video area so popovers anchored in the bar
-    // (Voice menu, More menu) paint OVER the video, never behind it.
+    justifyContent: "center",
+    padding: "18px 24px 24px",
+    background:
+      "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%)",
+    flexShrink: 0,
     zIndex: 50,
-  },
-  leftSpacer: {
-    flex: 1,
   },
   controls: {
     display: "flex",
     alignItems: "center",
     gap: 10,
-    padding: "6px 10px",
-    borderRadius: "var(--radius-pill)",
-    background: "var(--bg-raised)",
-    border: "1px solid var(--border)",
-    boxShadow: "var(--elev-floating)",
   },
-  group: {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-  },
-  voiceWrap: {
-    position: "relative",
+  anchor: {
     display: "flex",
     alignItems: "center",
   },
-  voiceChevron: {
-    width: 22,
-    height: 30,
-    borderRadius: 8,
-    marginLeft: 2,
-  },
-  groupDivider: {
-    width: 1,
-    height: 24,
-    background: "var(--border)",
-    margin: "0 6px",
-    flexShrink: 0,
-  },
-  rightSpacer: {
-    flex: 1,
-    display: "flex",
-    justifyContent: "flex-end",
-  },
-  controlButton: {
+  btn: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 42,
-    height: 42,
+    width: 46,
+    height: 46,
     borderRadius: "50%",
     border: "none",
-    color: "var(--text)",
+    background: MEET.btn,
+    color: MEET.icon,
     cursor: "pointer",
-    position: "relative",
-    transition:
-      "background var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard), transform var(--motion-fast) var(--ease-standard)",
+    WebkitBackdropFilter: "blur(12px)",
+    backdropFilter: "blur(12px)",
   },
-  chatBadge: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    minWidth: 18,
-    height: 18,
-    padding: "0 5px",
+  camWrap: {
+    display: "flex",
+    alignItems: "center",
+    background: MEET.btn,
     borderRadius: 999,
-    background: "var(--danger)",
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: 700,
+    paddingLeft: 2,
+    WebkitBackdropFilter: "blur(12px)",
+    backdropFilter: "blur(12px)",
+  },
+  camChevron: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 5,
-    boxShadow: "0 2px 8px rgba(234,67,53,0.4)",
+    width: 30,
+    height: 46,
+    border: "none",
+    background: "transparent",
+    color: MEET.icon,
+    cursor: "pointer",
+    borderRight: `1px solid ${MEET.panelBorder}`,
   },
-  moreWrap: {
-    position: "relative",
-    display: "flex",
+  divider: {
+    width: 1,
+    height: 26,
+    background: MEET.panelBorder,
+    margin: "0 2px",
+    flexShrink: 0,
   },
+  leaveBtn: {
+    background: MEET.danger,
+    color: MEET.dangerInk,
+    marginLeft: 4,
+  },
+
+  /* ── More menu ── */
   moreMenu: {
-    position: "absolute",
-    bottom: 50,
-    right: 0,
+    position: "fixed",
+    left: "50%",
+    transform: "translateX(-50%)",
+    bottom: 96,
+    width: 340,
+    maxHeight: "70vh",
+    overflowY: "auto",
+    background: MEET.panel,
+    border: `1px solid ${MEET.panelBorder}`,
+    borderRadius: 16,
+    padding: "8px 0",
+    color: MEET.text,
+    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+    zIndex: 90,
+  },
+  recBlock: {
+    padding: "10px 16px",
+    borderBottom: `1px solid ${MEET.panelBorder}`,
+    marginBottom: 6,
+  },
+  recStart: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    width: "100%",
+    padding: "8px 10px",
+    borderRadius: 10,
+    background: "transparent",
+    border: "none",
+    color: MEET.text,
+    fontSize: 14,
+    fontWeight: 500,
+    textAlign: "left",
+  },
+  recRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+  recStatus: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 13,
+    fontWeight: 600,
+    color: MEET.text,
+  },
+  recDot: {
+    width: 10,
+    height: 10,
+    borderRadius: "50%",
+    background: MEET.danger,
+    animation: "pulse 1.4s ease-in-out infinite",
+  },
+  moreItemInline: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "7px 10px",
+    borderRadius: 10,
+    background: "rgba(255,255,255,0.08)",
+    border: "none",
+    color: MEET.text,
+    fontSize: 13,
+    fontWeight: 500,
+  },
+  recUnavailable: {
     display: "flex",
     flexDirection: "column",
     gap: 2,
-    padding: 6,
-    borderRadius: "var(--radius-2xl)",
-    background: "var(--bg-card)",
-    border: "1px solid var(--border)",
-    boxShadow: "var(--elev-floating)",
-    zIndex: 30,
-    minWidth: 170,
+  },
+  recUnavailableTitle: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: MEET.text,
+  },
+  recUnavailableSub: {
+    fontSize: 12,
+    color: MEET.textDim,
+  },
+  moreGroup: {
+    display: "flex",
+    flexDirection: "column",
+    padding: "2px 0",
+  },
+  moreDivider: {
+    height: 1,
+    background: MEET.panelBorder,
+    margin: "4px 12px",
   },
   moreItem: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
-    padding: "8px 12px",
-    borderRadius: 8,
-    border: "none",
+    gap: 12,
+    width: "100%",
+    padding: "11px 16px",
     background: "transparent",
-    color: "var(--text)",
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: "pointer",
+    border: "none",
+    color: MEET.text,
+    fontSize: 14,
+    fontWeight: 400,
     textAlign: "left",
-    whiteSpace: "nowrap",
-  },
-  moreDivider: {
-    height: 1,
-    background: "var(--border)",
-    margin: "4px 0",
-  },
-  hotkeyInput: {
-    marginLeft: "auto",
-    width: 52,
-    padding: "4px 6px",
-    borderRadius: 6,
-    border: "1px solid var(--border)",
-    background: "var(--bg-soft)",
-    color: "var(--text)",
-    fontSize: 12,
-    fontWeight: 600,
-    textAlign: "center",
     cursor: "pointer",
-    outline: "none",
   },
-  leaveButton: {
-    background: "var(--danger)",
-    color: "#fff",
-    boxShadow: "var(--elev-floating), 0 4px 16px rgba(234,67,53,0.3)",
+  moreItemIcon: {
+    display: "flex",
+    alignItems: "center",
+    color: "rgba(255,255,255,0.85)",
   },
 };

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { ControlBar } from "../../components/ControlBar";
 
-function renderControlBar(overrides = {}) {
+function renderControlBar(overrides: Record<string, unknown> = {}) {
   const defaults = {
     isMuted: false,
     isVideoOff: false,
@@ -16,11 +16,16 @@ function renderControlBar(overrides = {}) {
     onToggleChat: vi.fn(),
     onToggleParticipants: vi.fn(),
     onLeave: vi.fn(),
-    // New feature props
     onToggleSettings: vi.fn(),
     onToggleHandRaise: vi.fn(),
     onToggleInvite: vi.fn(),
     onToggleLayout: vi.fn(),
+    onToggleFullscreen: vi.fn(),
+    onTogglePiP: vi.fn(),
+    onOpenBackgrounds: vi.fn(),
+    onOpenCameraOptions: vi.fn(),
+    onReport: vi.fn(),
+    onHelp: vi.fn(),
     onToggleRecord: vi.fn(),
     isHandRaised: false,
     isRecording: false,
@@ -45,26 +50,43 @@ function renderControlBar(overrides = {}) {
     onPushToTalkHotkeyChange: vi.fn(),
     isCaptionsEnabled: false,
     onToggleCaptions: vi.fn(),
-    isNoiseSuppression: false,
-    onToggleNoiseSuppression: vi.fn(),
     onMuteAll: vi.fn(),
-    volume: 1,
-    onVolumeChange: vi.fn(),
   };
   return { ...defaults, ...overrides };
 }
 
+/** Open the More menu (left 3-dot button titled "More"). */
+async function openMore(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTitle("More"));
+}
+
 describe("ControlBar", () => {
-  it("renders all control buttons", () => {
+  it("renders all control buttons in the Meet layout", () => {
     const props = renderControlBar();
     render(<ControlBar {...props} />);
 
     expect(screen.getByTitle("Mute")).toBeInTheDocument();
     expect(screen.getByTitle("Turn off camera")).toBeInTheDocument();
     expect(screen.getByTitle("Share screen")).toBeInTheDocument();
-    expect(screen.getByTitle("Chat")).toBeInTheDocument();
-    expect(screen.getByTitle("Participants")).toBeInTheDocument();
+    expect(screen.getByTitle("Reactions")).toBeInTheDocument();
+    expect(screen.getByTitle("Captions")).toBeInTheDocument();
+    expect(screen.getByTitle("Raise hand")).toBeInTheDocument();
+    expect(screen.getByTitle("More")).toBeInTheDocument();
+    expect(screen.getByTitle("More options")).toBeInTheDocument();
     expect(screen.getByTitle("Leave")).toBeInTheDocument();
+  });
+
+  it("renders the right rail with Chat and People", () => {
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+    expect(screen.getByTitle("Chat")).toBeInTheDocument();
+    expect(screen.getByTitle("People")).toBeInTheDocument();
+  });
+
+  it("shows the unread chat badge on the rail button", () => {
+    const props = renderControlBar({ unreadChat: 3 });
+    render(<ControlBar {...props} />);
+    expect(screen.getByText("3")).toBeInTheDocument();
   });
 
   it("calls onToggleMute when mute button is clicked", async () => {
@@ -100,46 +122,120 @@ describe("ControlBar", () => {
     expect(screen.getByTitle("Unmute")).toBeInTheDocument();
   });
 
-  it("renders new feature buttons", () => {
-    const props = renderControlBar();
-    render(<ControlBar {...props} />);
-
-    expect(screen.getByTitle("More")).toBeInTheDocument();
-    expect(screen.getByTitle("Raise hand")).toBeInTheDocument();
-    expect(screen.getByTitle("Invite")).toBeInTheDocument();
-    expect(screen.getByTitle("Switch to speaker view")).toBeInTheDocument();
-    expect(screen.getByTitle("Start recording")).toBeInTheDocument();
-  });
-
-  it("calls onToggleSettings when settings button is clicked in the More menu", async () => {
+  it("calls onToggleReactions and onToggleCaptions from the bar", async () => {
     const user = userEvent.setup();
     const props = renderControlBar();
     render(<ControlBar {...props} />);
 
-    await user.click(screen.getByTitle("More"));
+    await user.click(screen.getByTitle("Reactions"));
+    expect(props.onToggleReactions).toHaveBeenCalledOnce();
+
+    await user.click(screen.getByTitle("Captions"));
+    expect(props.onToggleCaptions).toHaveBeenCalledOnce();
+  });
+
+  it("opens Settings from the More menu", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+
+    await openMore(user);
     await user.click(await screen.findByText("Settings"));
     expect(props.onToggleSettings).toHaveBeenCalledOnce();
   });
 
-  it("calls onToggleRecord when record button is clicked", async () => {
+  it("opens Adjust view from the More menu", async () => {
     const user = userEvent.setup();
     const props = renderControlBar();
     render(<ControlBar {...props} />);
 
-    await user.click(screen.getByTitle("Start recording"));
+    await openMore(user);
+    await user.click(await screen.findByText("Adjust view"));
+    expect(props.onToggleLayout).toHaveBeenCalledOnce();
+  });
+
+  it("opens Full screen and picture-in-picture from the More menu", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+
+    await openMore(user);
+    await user.click(await screen.findByText("Full screen"));
+    expect(props.onToggleFullscreen).toHaveBeenCalledOnce();
+
+    await openMore(user);
+    await user.click(await screen.findByText("Open picture-in-picture"));
+    expect(props.onTogglePiP).toHaveBeenCalledOnce();
+  });
+
+  it("opens Backgrounds and effects from the More menu", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+
+    await openMore(user);
+    await user.click(await screen.findByText("Backgrounds and effects"));
+    expect(props.onOpenBackgrounds).toHaveBeenCalledOnce();
+  });
+
+  it("opens the help dialog from the More menu", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+
+    await openMore(user);
+    await user.click(await screen.findByText("Troubleshooting & help"));
+    expect(props.onHelp).toHaveBeenCalledOnce();
+  });
+
+  it("reports a problem from the More menu", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+
+    await openMore(user);
+    await user.click(await screen.findByText("Report a problem"));
+    expect(props.onReport).toHaveBeenCalledWith("problem");
+  });
+
+  it("reports abuse from the More menu", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar();
+    render(<ControlBar {...props} />);
+
+    await openMore(user);
+    await user.click(await screen.findByText("Report abuse"));
+    expect(props.onReport).toHaveBeenCalledWith("abuse");
+  });
+
+  it("shows Recording unavailable for non-hosts in the More menu", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar({ isHost: false });
+    render(<ControlBar {...props} />);
+
+    await openMore(user);
+    expect(await screen.findByText("Recording unavailable")).toBeInTheDocument();
+    expect(screen.getByText("You're not allowed to record this video call")).toBeInTheDocument();
+  });
+
+  it("starts recording from the More menu as host", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar({ isHost: true });
+    render(<ControlBar {...props} />);
+
+    await openMore(user);
+    await user.click(await screen.findByTitle("Start recording"));
     expect(props.onToggleRecord).toHaveBeenCalledOnce();
   });
 
-  it("shows Pause recording when recording", () => {
-    const props = renderControlBar({ isRecording: true });
+  it("shows Pause / Stop recording for a host while recording", async () => {
+    const user = userEvent.setup();
+    const props = renderControlBar({ isHost: true, isRecording: true });
     render(<ControlBar {...props} />);
-    expect(screen.getByTitle("Pause recording")).toBeInTheDocument();
-  });
 
-  it("shows Resume recording when recording is paused", () => {
-    const props = renderControlBar({ isRecording: true, isRecordingPaused: true });
-    render(<ControlBar {...props} />);
-    expect(screen.getByTitle("Resume recording")).toBeInTheDocument();
+    await openMore(user);
+    expect(await screen.findByTitle("Pause recording")).toBeInTheDocument();
+    expect(screen.getByTitle("Stop recording")).toBeInTheDocument();
   });
 
   it("shows Lower hand when hand is raised", () => {
@@ -148,71 +244,33 @@ describe("ControlBar", () => {
     expect(screen.getByTitle("Lower hand")).toBeInTheDocument();
   });
 
-  it("hides the lock button for non-hosts", () => {
+  it("hides the lock action for non-hosts", async () => {
+    const user = userEvent.setup();
     const props = renderControlBar({ isHost: false });
     render(<ControlBar {...props} />);
-    expect(screen.queryByTitle(/lock room/i)).not.toBeInTheDocument();
+
+    await openMore(user);
+    expect(await screen.findByText("Invite")).toBeInTheDocument();
+    expect(screen.queryByText("Lock room")).not.toBeInTheDocument();
   });
 
-  it("shows the lock button for hosts when room is unlocked", () => {
-    const props = renderControlBar({ isHost: true, isLocked: false });
-    render(<ControlBar {...props} />);
-    expect(screen.getByTitle("Lock room")).toBeInTheDocument();
-  });
-
-  it("shows the unlock button for hosts when room is locked", () => {
-    const props = renderControlBar({ isHost: true, isLocked: true });
-    render(<ControlBar {...props} />);
-    expect(screen.getByTitle("Unlock room")).toBeInTheDocument();
-  });
-
-  it("calls onToggleLock when the lock button is clicked", async () => {
+  it("locks the room from the More menu as host", async () => {
     const user = userEvent.setup();
     const props = renderControlBar({ isHost: true, isLocked: false });
     render(<ControlBar {...props} />);
 
-    await user.click(screen.getByTitle("Lock room"));
+    await openMore(user);
+    await user.click(await screen.findByText("Lock room"));
     expect(props.onToggleLock).toHaveBeenCalledOnce();
   });
 
-  it("opens the Voice menu from the mic chevron", async () => {
-    const user = userEvent.setup();
-    const props = renderControlBar();
-    render(<ControlBar {...props} />);
-
-    await user.click(screen.getByTitle("Voice settings (noise suppression, push to talk, mute)"));
-    expect(screen.getByText("Microphone")).toBeInTheDocument();
-    expect(screen.getByText("Push to talk")).toBeInTheDocument();
-    expect(screen.getByText("Mute microphone")).toBeInTheDocument();
-  });
-
-  it("enables push-to-talk from the Voice menu", async () => {
-    const user = userEvent.setup();
-    const props = renderControlBar();
-    render(<ControlBar {...props} />);
-
-    await user.click(screen.getByTitle("Voice settings (noise suppression, push to talk, mute)"));
-    await user.click(screen.getByText("Enable push to talk"));
-    expect(props.onTogglePushToTalk).toHaveBeenCalledOnce();
-  });
-
-  it("toggles noise suppression from the Voice menu", async () => {
-    const user = userEvent.setup();
-    const props = renderControlBar();
-    render(<ControlBar {...props} />);
-
-    await user.click(screen.getByTitle("Voice settings (noise suppression, push to talk, mute)"));
-    await user.click(screen.getByText("Noise suppression"));
-    expect(props.onToggleNoiseSuppression).toHaveBeenCalledOnce();
-  });
-
-  it("shows Mute all participants in the Voice menu for hosts", async () => {
+  it("mutes all participants from the More menu as host", async () => {
     const user = userEvent.setup();
     const props = renderControlBar({ isHost: true });
     render(<ControlBar {...props} />);
 
-    await user.click(screen.getByTitle("Voice settings (noise suppression, push to talk, mute)"));
-    await user.click(screen.getByText("Mute all participants"));
+    await openMore(user);
+    await user.click(await screen.findByText("Mute all participants"));
     expect(props.onMuteAll).toHaveBeenCalledOnce();
   });
 

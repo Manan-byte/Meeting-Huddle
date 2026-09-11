@@ -15,6 +15,8 @@ apps/web/.env
 # Local data
 apps/server/data/
 data/
+.wrangler/
+apps/worker/.wrangler/
 
 # Test / debug artifacts
 coverage/

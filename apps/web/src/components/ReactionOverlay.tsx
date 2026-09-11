@@ -15,6 +15,8 @@ import "../styles/Reactions.css";
 interface ReactionOverlayProps {
   /** Array of reactions to display as floating animations. */
   reactions: Reaction[];
+  /** Whether reactions animate (float up). False = static center display. */
+  animate?: boolean;
 }
 
 /**
@@ -31,7 +33,7 @@ interface FloatingReaction extends Reaction {
  * Renders floating emoji reactions that auto-fade after 2 seconds.
  * Each new reaction gets a random horizontal position for visual variety.
  */
-export function ReactionOverlay({ reactions }: ReactionOverlayProps) {
+export function ReactionOverlay({ reactions, animate = true }: ReactionOverlayProps) {
   const [floating, setFloating] = useState<FloatingReaction[]>([]);
 
   useEffect(() => {
@@ -62,8 +64,8 @@ export function ReactionOverlay({ reactions }: ReactionOverlayProps) {
       {floating.map((r) => (
         <span
           key={r.id}
-          className="floating-reaction"
-          style={{ left: `${r.left}%` }}
+          className={animate ? "floating-reaction" : "floating-reaction floating-static"}
+          style={{ left: animate ? `${r.left}%` : "50%" }}
         >
           {r.type}
         </span>
