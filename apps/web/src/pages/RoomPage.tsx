@@ -800,12 +800,6 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
     setShowSettings(true);
   }, []);
 
-  /** Open Settings on the Video tab (camera chevron). */
-  const openCameraOptions = useCallback(() => {
-    setSettingsTab("video");
-    setShowSettings(true);
-  }, []);
-
   /** Report a problem / abuse → prefilled mailto dialog. */
   const handleReport = useCallback((type: "problem" | "abuse") => {
     setReportType(type);
@@ -1064,7 +1058,6 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
         onToggleFullscreen={toggleFullscreen}
         onTogglePiP={togglePiP}
         onOpenBackgrounds={openBackgrounds}
-        onOpenCameraOptions={openCameraOptions}
         onReport={handleReport}
         onHelp={() => setShowHelp(true)}
         onToggleRecord={handleToggleRecord}

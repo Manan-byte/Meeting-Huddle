@@ -39,7 +39,7 @@
                   │
                   ├── <ControlBar>                   // Bottom toolbar (Meet layout)
                   │     ├── Mic toggle / hold-to-talk (PTT)
-                  │     ├── Camera toggle + chevron tab (→ Settings Video)
+                  │     ├── Camera toggle
                   │     ├── Screen share toggle
                   │     ├── Reactions toggle
                   │     ├── Captions toggle
@@ -243,7 +243,7 @@ Also exports **`buildInviteMailto(invitees, meeting, clientUrl)`** → a `mailto
 | `pushToTalkHotkey` | `string` — configured hotkey (raw key value, `" "` for Space) |
 | `onMuteAll` | `() => void` — host "Mute all participants" (More menu) |
 
-**Behavior**: Google Meet-style bottom toolbar: mic (toggle / hold-to-talk when PTT active) · camera + integrated chevron tab (tab → Settings Video) · screen share · reactions · captions · raise hand · `⋮` **More options** (the single menu trigger) · red **Leave** call button. A **right vertical rail** holds Chat (with unread badge) and People toggles. The **More menu** contains: recording (host: start/pause/stop; non-host: "Recording unavailable"), Adjust view, Full screen, Open picture-in-picture, Backgrounds and effects, Report a problem, Report abuse, Troubleshooting & help, Settings, plus (host) Lock room / Mute all participants, Invite, Polls, and theme toggle. All chrome uses a fixed dark palette (`MEET` object), independent of the app light/dark theme.
+**Behavior**: Google Meet-style bottom toolbar: mic (toggle / hold-to-talk when PTT active) · camera · screen share · reactions · captions · raise hand · `⋮` **More options** (the single menu trigger) · red **Leave** call button. A **right vertical rail** holds Chat (with unread badge) and People toggles. The **More menu** contains: recording (host: start/pause/stop; non-host: "Recording unavailable"), Adjust view, Full screen, Open picture-in-picture, Backgrounds and effects, Report a problem, Report abuse, Troubleshooting & help, Settings, plus (host) Lock room / Mute all participants, Invite, Polls, and theme toggle. All chrome uses a fixed dark palette (`MEET` object), independent of the app light/dark theme.
 
 **Push-to-talk**: When `isPushToTalk` is true the mic button becomes a **hold-to-talk** control (pointer down = `onPushToTalkStart`, up/leave/cancel = `onPushToTalkStop`). PTT is enabled/hotkey-configured in **Settings → Audio** (not in the bar anymore).
 

@@ -29,7 +29,6 @@ import {
   Smile,
   Captions,
   MoreVertical,
-  ChevronUp,
   Circle,
   Pause,
   Play,
@@ -92,8 +91,6 @@ interface ControlBarProps {
   onTogglePiP: () => void;
   /** Open the Settings modal on the Video tab (backgrounds & effects). */
   onOpenBackgrounds: () => void;
-  /** Open the Settings modal on the Video tab (camera/background). */
-  onOpenCameraOptions: () => void;
   onReport: (type: "problem" | "abuse") => void;
   onHelp: () => void;
   onToggleRecord: () => void;
@@ -153,7 +150,6 @@ export function ControlBar({
   onToggleFullscreen,
   onTogglePiP,
   onOpenBackgrounds,
-  onOpenCameraOptions,
   onReport,
   onHelp,
   onToggleRecord,
@@ -251,31 +247,19 @@ export function ControlBar({
             {micToggled ? <MicOff size={20} /> : <Mic size={20} />}
           </button>
 
-          {/* Camera composite: toggle + integrated chevron tab (Meet style) */}
-          <div
+          {/* Camera — plain toggle (camera/background options live in Settings > Video) */}
+          <button
+            className="ctl-btn"
             style={{
-              ...styles.camWrap,
+              ...styles.btn,
               background: isVideoOff ? MEET.camOffBg : MEET.btn,
               color: isVideoOff ? MEET.camOffInk : MEET.icon,
             }}
+            onClick={onToggleVideo}
+            title={isVideoOff ? "Turn on camera" : "Turn off camera"}
           >
-            <button
-              className="ctl-btn ctl-camopt"
-              style={styles.camChevron}
-              onClick={onOpenCameraOptions}
-              title="Camera options"
-            >
-              <ChevronUp size={12} />
-            </button>
-            <button
-              className="ctl-btn"
-              style={styles.camBtn}
-              onClick={onToggleVideo}
-              title={isVideoOff ? "Turn on camera" : "Turn off camera"}
-            >
-              {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
-            </button>
-          </div>
+            {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
+          </button>
 
           {/* Screen share */}
           <button
@@ -560,46 +544,6 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer",
     WebkitBackdropFilter: "blur(12px)",
     backdropFilter: "blur(12px)",
-  },
-  camWrap: {
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 46,
-    height: 46,
-    borderRadius: "50%",
-    WebkitBackdropFilter: "blur(12px)",
-    backdropFilter: "blur(12px)",
-  },
-  camChevron: {
-    position: "absolute",
-    top: -6,
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: 26,
-    height: 15,
-    borderRadius: "8px 8px 3px 3px",
-    border: `1px solid ${MEET.panelBorder}`,
-    background: "#3c4043",
-    color: "#ffffff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 0,
-    cursor: "pointer",
-    zIndex: 3,
-  },
-  camBtn: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    border: "none",
-    background: "transparent",
-    color: "inherit",
-    cursor: "pointer",
   },
   divider: {
     width: 1,
