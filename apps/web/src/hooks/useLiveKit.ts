@@ -30,6 +30,8 @@ interface UseLiveKitOptions {
   roomName: string | null;
   /** Display identity used for the LiveKit participant. */
   identity: string;
+  /** Adaptive audio: add echo cancellation + auto gain to the mic. */
+  adaptiveAudio?: boolean;
 }
 
 /**
@@ -38,7 +40,7 @@ interface UseLiveKitOptions {
  * @param options - LiveKit room + identity
  * @returns Object with streams and toggle functions (useWebRTC-compatible).
  */
-export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
+export function useLiveKit({ roomName, identity, adaptiveAudio = false }: UseLiveKitOptions) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
@@ -82,6 +84,9 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
   const micMutedRef = useRef(false);
   /** Whether noise suppression / echo cancellation is active on the mic. */
   const noiseRef = useRef(false);
+  /** Adaptive audio (echo cancellation + auto gain) on the mic. */
+  const adaptiveRef = useRef(adaptiveAudio);
+  adaptiveRef.current = adaptiveAudio;
   const [noiseSuppression, setNoiseSuppression] = useState(false);
   /** User-facing message when camera/mic/LiveKit fails (shown in RoomPage). */
   const [mediaError, setMediaError] = useState<string | null>(null);
@@ -262,8 +267,8 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     // speaker feedback, auto gain keeps levels stable. Zero dependencies.
     const constraints: MediaTrackConstraints = {
       ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
-      ...(useNoise
-        ? { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
+      ...(useNoise || adaptiveRef.current
+        ? { noiseSuppression: useNoise, echoCancellation: true, autoGainControl: true }
         : {}),
     };
     const mic = await createLocalAudioTrack(constraints);
@@ -342,6 +347,19 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     setScreenStream(null);
   }, []);
 
+  /** Apply adaptive audio on/off by re-acquiring the mic with the new constraints. */
+  const applyAdaptiveAudio = useCallback(
+    async (on: boolean) => {
+      adaptiveRef.current = on;
+      try {
+        await swapMic(settingsRef.current.audioDevice || null, noiseRef.current);
+      } catch (err) {
+        console.error("Failed to apply adaptive audio:", err);
+      }
+    },
+    [swapMic],
+  );
+
   /** Toggle screen sharing via getDisplayMedia + publish. */
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {
@@ -378,6 +396,7 @@ export function useLiveKit({ roomName, identity }: UseLiveKitOptions) {
     applySettings,
     noiseSuppression,
     toggleNoiseSuppression,
+    applyAdaptiveAudio,
     mediaError,
   };
 }

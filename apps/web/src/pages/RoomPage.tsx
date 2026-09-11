@@ -260,8 +260,25 @@ export function RoomPage({ onLeaveRoom, initialWaiting = false }: RoomPageProps)
     applySettings,
     noiseSuppression,
     toggleNoiseSuppression,
+    applyAdaptiveAudio,
     mediaError,
-  } = useLiveKit({ roomName: room?.code ?? null, identity: currentUser?.id ?? "participant" });
+  } = useLiveKit({
+    roomName: room?.code ?? null,
+    identity: currentUser?.id ?? "participant",
+    adaptiveAudio: prefs.adaptiveAudio,
+  });
+
+  // Re-apply the mic with/without echo cancellation when Adaptive audio
+  // changes in Settings (skips the initial mount — the connect effect
+  // already acquires the mic once).
+  const adaptiveAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!room || !adaptiveAppliedRef.current) {
+      adaptiveAppliedRef.current = true;
+      return;
+    }
+    void applyAdaptiveAudio(prefs.adaptiveAudio);
+  }, [prefs.adaptiveAudio, room, applyAdaptiveAudio]);
 
   // Local mic activity → speaking ring on the mic button (and own tile).
   const localSpeakingLevel = useSpeakingLevel(localStream);

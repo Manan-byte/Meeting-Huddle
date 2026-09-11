@@ -27,13 +27,12 @@ interface SegmentedVideoProps {
   mode: "blur" | "color" | "image";
   /** For color/image: a CSS color or a URL (data:/http) for the background. */
   background: string;
-  style?: CSSProperties;
 }
 
 /**
  * Renders the background as a frame around a clear, full-opacity video.
  */
-export function SegmentedVideo({ stream, mode, background, style }: SegmentedVideoProps) {
+export function SegmentedVideo({ stream, mode, background }: SegmentedVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgRef = useRef<HTMLVideoElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -70,7 +69,7 @@ export function SegmentedVideo({ stream, mode, background, style }: SegmentedVid
         autoPlay
         playsInline
         muted
-        style={{ ...styles.clearVideo, ...(style as CSSProperties) }}
+        style={styles.clearVideo}
         onLoadedMetadata={(e) => {
           bind(e.currentTarget);
           void e.currentTarget.play().catch(() => {});

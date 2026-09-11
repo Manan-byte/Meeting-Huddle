@@ -97,7 +97,7 @@ export function VideoPlayer({
       {isVideoOff || !stream ? (
         <div style={styles.initials}>{initials}</div>
       ) : useSegmented ? (
-        <SegmentedVideo stream={stream} mode={segMode} background={virtualBackground ?? ""} style={styles.video} />
+        <SegmentedVideo stream={stream} mode={segMode} background={virtualBackground ?? ""} />
       ) : (
         <video
           ref={videoRef}

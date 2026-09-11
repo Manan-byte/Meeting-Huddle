@@ -486,6 +486,12 @@ Reactions, Polls, Live Captions, AI Companion, Virtual Background, Settings Pane
 
 ## Changelog — Recent Fixes & Improvements
 
+### Virtual background fix + landing footer revamp + adaptive audio
+- **Virtual background tidak lagi menutupi wajah**: `VideoPlayer` mengoper `style` (width/height 100%) ke `SegmentedVideo` sehingga menimpa inset video — latar malah tertutup penuh oleh video (tampak tidak berfungsi). Kini `SegmentedVideo` memakai layout-nya sendiri: latar (blur/color/image) tampil sebagai frame utuh di belakang, video jernih full-opacity di tengah — wajah selalu terlihat.
+  - Catatan: tanpa model ML (tetap zero-dependency), background ditampilkan sebagai **frame** di sekeliling video, bukan pengganti latar penuh ala Google.
+- **Footer landing page dirombak**: tema adaptif (bukan hitam keras), padding lebih besar, brand 26px dengan mark gradient + glow, judul kolom aksen, link 14px hover aksen, chip glass, bottom bar dengan separator aksen.
+- **Adaptive audio kini berfungsi**: toggle di Settings → Audio menambahkan echo cancellation + auto gain ke track mic (re-acquire via `applyAdaptiveAudio`, skip on mount).
+
 ### Room UI overhaul — Google Meet-style
 - **ControlBar** ditulis ulang mengikuti layout Meet: mic · kamera + chevron tab (→ Settings Video) · layar · reaksi · captions · angkat tangan · `⋮` More options (menu tunggal) · end call. Rail vertikal kanan: **Chat** (badge unread) + **People**. Semua chrome gelap permanen (independen dari tema).
 - **Menu ⋯**: blok recording (host: start/pause/stop; non-host: "Recording unavailable"), Adjust view, Full screen (activeElement fullscreen), Picture-in-picture (kamera lokal), Backgrounds and effects, Report a problem, Report abuse, Troubleshooting & help, Settings; plus invite/polls/theme dan (host) lock room + Mute all.
