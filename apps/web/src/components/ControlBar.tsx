@@ -28,7 +28,6 @@ import {
   Hand,
   Smile,
   Captions,
-  MoreHorizontal,
   MoreVertical,
   ChevronUp,
   Circle,
@@ -220,18 +219,6 @@ export function ControlBar({
       {/* ── Bottom control bar ────────────────────────────────────── */}
       <div className="ctl-bar" style={styles.bar}>
         <div className="ctl-controls" style={styles.controls}>
-          {/* More menu trigger (left) */}
-          <div className="ctl-more-anchor" style={styles.anchor}>
-            <button
-              className="ctl-btn"
-              style={styles.btn}
-              onClick={() => setShowMore((v) => !v)}
-              title="More"
-            >
-              <MoreHorizontal size={20} />
-            </button>
-          </div>
-
           {/* Mic — plain toggle (audio settings live in Settings > Audio) */}
           <button
             className="ctl-btn"
@@ -264,23 +251,25 @@ export function ControlBar({
             {micToggled ? <MicOff size={20} /> : <Mic size={20} />}
           </button>
 
-          {/* Camera composite: chevron (options) + camera toggle */}
-          <div style={styles.camWrap}>
+          {/* Camera composite: toggle + integrated chevron tab (Meet style) */}
+          <div
+            style={{
+              ...styles.camWrap,
+              background: isVideoOff ? MEET.camOffBg : MEET.btn,
+              color: isVideoOff ? MEET.camOffInk : MEET.icon,
+            }}
+          >
             <button
               className="ctl-btn ctl-camopt"
               style={styles.camChevron}
               onClick={onOpenCameraOptions}
               title="Camera options"
             >
-              <ChevronUp size={16} />
+              <ChevronUp size={12} />
             </button>
             <button
               className="ctl-btn"
-              style={{
-                ...styles.btn,
-                background: isVideoOff ? MEET.camOffBg : MEET.btn,
-                color: isVideoOff ? MEET.camOffInk : MEET.icon,
-              }}
+              style={styles.camBtn}
               onClick={onToggleVideo}
               title={isVideoOff ? "Turn on camera" : "Turn off camera"}
             >
@@ -558,10 +547,6 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     gap: 10,
   },
-  anchor: {
-    display: "flex",
-    alignItems: "center",
-  },
   btn: {
     display: "flex",
     alignItems: "center",
@@ -577,25 +562,44 @@ const styles: Record<string, CSSProperties> = {
     backdropFilter: "blur(12px)",
   },
   camWrap: {
+    position: "relative",
     display: "flex",
     alignItems: "center",
-    background: MEET.btn,
-    borderRadius: 999,
-    paddingLeft: 2,
+    justifyContent: "center",
+    width: 46,
+    height: 46,
+    borderRadius: "50%",
     WebkitBackdropFilter: "blur(12px)",
     backdropFilter: "blur(12px)",
   },
   camChevron: {
+    position: "absolute",
+    top: -6,
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: 26,
+    height: 15,
+    borderRadius: "8px 8px 3px 3px",
+    border: `1px solid ${MEET.panelBorder}`,
+    background: "#3c4043",
+    color: "#ffffff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 30,
-    height: 46,
+    padding: 0,
+    cursor: "pointer",
+    zIndex: 3,
+  },
+  camBtn: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     border: "none",
     background: "transparent",
-    color: MEET.icon,
+    color: "inherit",
     cursor: "pointer",
-    borderRight: `1px solid ${MEET.panelBorder}`,
   },
   divider: {
     width: 1,

@@ -55,9 +55,9 @@ function renderControlBar(overrides: Record<string, unknown> = {}) {
   return { ...defaults, ...overrides };
 }
 
-/** Open the More menu (left 3-dot button titled "More"). */
+/** Open the More menu (right ⋮ button titled "More options"). */
 async function openMore(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByTitle("More"));
+  await user.click(screen.getByTitle("More options"));
 }
 
 describe("ControlBar", () => {
@@ -71,8 +71,9 @@ describe("ControlBar", () => {
     expect(screen.getByTitle("Reactions")).toBeInTheDocument();
     expect(screen.getByTitle("Captions")).toBeInTheDocument();
     expect(screen.getByTitle("Raise hand")).toBeInTheDocument();
-    expect(screen.getByTitle("More")).toBeInTheDocument();
     expect(screen.getByTitle("More options")).toBeInTheDocument();
+    // Single More trigger — no duplicate menu button on the left
+    expect(screen.queryByTitle("More")).not.toBeInTheDocument();
     expect(screen.getByTitle("Leave")).toBeInTheDocument();
   });
 

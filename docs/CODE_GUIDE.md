@@ -160,7 +160,7 @@ State meeting bersama: `room`, `currentUser`, `participants`, `messages`,
 |----------|------|
 | `AuthModal` | Modal sign in / sign up / forgot password (self-contained, state form internal). |
 | `ChatPanel` | Panel chat gelap ala Meet: judul + X, input pill "Send a message", auto-scroll. |
-| `ControlBar` | Bar bawah ala Meet: ⋯ More, mic, kamera (chevron → settings video), layar, reaksi, captions, tangan, ⋮, end call + rail kanan Chat/People; menu ⋯ berisi recording, adjust view, fullscreen, PiP, background, report, help, settings. |
+| `ControlBar` | Bar bawah ala Meet: mic, kamera (chevron tab → settings video), layar, reaksi, captions, tangan, ⋮ More options (menu tunggal), end call + rail kanan Chat/People; menu ⋮ berisi recording, adjust view, fullscreen, PiP, background, report, help, settings. |
 | `InviteModal` | Salin link undangan (kode + URL) + mailto. |
 | `LiveCaptions` | Web Speech API → segment streaming ke room; bahasa, ukuran font & font bisa diatur di Settings → Captions. |
 | `MeetingTimer` | Timer meeting (startedAt → HH:MM:SS). |
